@@ -11,6 +11,7 @@ use strict;
 use warnings;
 
 use Term::ANSIColor;
+use Getopt::Std;
 
 my $version = '1.3.2';
 
@@ -192,90 +193,93 @@ sub analyse_msgs {
 sub parse_args {
     my @args = @_;
     my @actions;
+    my %opt;
 
-    foreach my $arg (@args) {
+    getopts('alLRNcsm:f:F:d:S:h:b:H:B:t:DV', \%opt);
+
+    foreach my $opt (keys %opt) {
         SWITCH: {
-            $arg eq '-a' and do {
+            $opt eq 'a' and do {
                 push @actions, [\&send_msgs];
                 last SWITCH;
             };
-            $arg eq '-l' and do {
+            $opt eq 'l' and do {
                 push @actions, [\&list_msg, 'A'];
                 last SWITCH;
             };
-            $arg eq '-L' and do {
+            $opt eq 'L' and do {
                 push @actions, [\&list_msg, 'L'];
                 last SWITCH;
             };
-            $arg eq '-R' and do {
+            $opt eq 'R' and do {
                 push @actions, [\&list_msg, 'R'];
                 last SWITCH;
             };
-            $arg eq '-N' and do {
+            $opt eq 'N' and do {
                 $summary = 1;
                 last SWITCH;
             };
-            $arg eq '-c' and do {
+            $opt eq 'c' and do {
                 ($cmsg, $cstat, $cend) = @colours;
                 last SWITCH;
             };
-            $arg eq '-s' and do {
+            $opt eq 's' and do {
                 push @actions, [\&stats];
                 last SWITCH;
             };
-            $arg =~ /^-m(.+)/ and do {
-                push @actions, [\&view_msg, $1];
+            $opt eq 'm' and do {
+                push @actions, [\&view_msg, $opt{$opt}];
                 last SWITCH;
             };
-            $arg =~ /^-f(.+)/ and do {
-                push @actions, [\&del_msg_from_sender, $1];
+            $opt eq 'f' and do {
+                push @actions, [\&del_msg_from_sender, $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-F(.+)/ and do {
-                push @actions, [\&del_msg_from_sender_r, $1];
+            $opt eq 'F' and do {
+                push @actions, [\&del_msg_from_sender_r, $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-d(.+)/ and do {
-                push @actions, [\&del_msg, $1];
+            $opt eq 'd' and do {
+                push @actions, [\&del_msg, $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-S(.+)/ and do {
-                push @actions, [\&del_msg_subj, $1];
+            $opt eq 'S' and do {
+                push @actions, [\&del_msg_subj, $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-h(.+)/ and do {
-                push @actions, [\&del_msg_header_r, 'I', $1];
+            $opt eq 'h' and do {
+                push @actions, [\&del_msg_header_r, 'I', $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-b(.+)/ and do {
-                push @actions, [\&del_msg_body_r, 'I', $1];
+            $opt eq 'b' and do {
+                push @actions, [\&del_msg_body_r, 'I', $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-H(.+)/ and do {
-                push @actions, [\&del_msg_header_r, 'C', $1];
+            $opt eq 'H' and do {
+                push @actions, [\&del_msg_header_r, 'C', $opt{$opt}];
                 $dactions++;
                 last SWITCH;
                 };
-            $arg =~ /^-B(.+)/ and do {
-                push @actions, [\&del_msg_body_r, 'C', $1];
+            $opt eq 'B' and do {
+                push @actions, [\&del_msg_body_r, 'C', $opt{$opt}];
                 $dactions++;
                 last SWITCH;
             };
-            $arg =~ /^-t(.+)/ and do {
-                push @actions, [\&flag_remote, $1];
+            $opt eq 't' and do {
+                push @actions, [\&flag_remote, $opt{$opt}];
                 last SWITCH;
             };
-            $arg eq '-D' and do {
+            $opt eq '-D' and do {
                 push @actions, [\&del_all];
                 $dactions++;
                 last SWITCH; };
-            $arg eq '-V' and do {
+            $opt eq '-V' and do {
                 push @actions, [\&version];
                 last SWITCH;
                 };
