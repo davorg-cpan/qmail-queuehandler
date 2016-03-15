@@ -54,7 +54,7 @@ my $pidcmd = 'pidof qmail-send';
 ####################  USER CONFIGURATION END  ####################
 
 # Print usage if no arguments
-@ARGV or Usage();
+@ARGV or usage();
 
 # Get command line options
 
@@ -79,7 +79,7 @@ analyse_msgs();
 
 # In case of deletion actions, stop qmail
 if ($dactions) {
-    stopQmail() or die "Could not stop qmail: $!\n";
+    stop_qmail() or die "Could not stop qmail: $!\n";
 }
 
 # Execute actions    
@@ -90,8 +90,8 @@ foreach my $action (@$actions) {
 
 # In case of deletion actions, restart qmail
 if ($dactions) {
-    TrashMsgs();
-    startQmail() or die "Could not stop qmail: $!\n";
+    trash_msgs();
+    start_qmail() or die "Could not stop qmail: $!\n";
 }
 
 # ##### SERVICE FUNCTIONS #####
@@ -183,26 +183,26 @@ sub parse_args {
 
     foreach my $arg (@$ARGV) {
         SWITCH: {
-            $arg eq '-a' and do { push @$actions, [\&SendMsgs]; last SWITCH; };
-            $arg eq '-l' and do { push @$actions, [\&ListMsg, 'A']; last SWITCH; };
-            $arg eq '-L' and do { push @$actions, [\&ListMsg, 'L']; last SWITCH; };
-            $arg eq '-R' and do { push @$actions, [\&ListMsg, 'R']; last SWITCH; };
+            $arg eq '-a' and do { push @$actions, [\&send_msgs]; last SWITCH; };
+            $arg eq '-l' and do { push @$actions, [\&list_msg, 'A']; last SWITCH; };
+            $arg eq '-L' and do { push @$actions, [\&list_msg, 'L']; last SWITCH; };
+            $arg eq '-R' and do { push @$actions, [\&list_msg, 'R']; last SWITCH; };
             $arg eq '-N' and do { $summary = 1; last SWITCH; };
             $arg eq '-c' and do { ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m"); last SWITCH; };
-            $arg eq '-s' and do { push @$actions, [\&Stats]; last SWITCH; };
-            $arg =~ /^-m(.+)/ and do { push @$actions, [\&ViewMsg, $1]; last SWITCH; };
-            $arg =~ /^-f(.+)/ and do { push @$actions, [\&DelMsgFromSender, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-F(.+)/ and do { push @$actions, [\&DelMsgFromSenderR, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-d(.+)/ and do { push @$actions, [\&DelMsg, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-S(.+)/ and do { push @$actions, [\&DelMsgSubj, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-h(.+)/ and do { push @$actions, [\&DelMsgHeaderR, 'I', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-b(.+)/ and do { push @$actions, [\&DelMsgBodyR, 'I', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-H(.+)/ and do { push @$actions, [\&DelMsgHeaderR, 'C', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-B(.+)/ and do { push @$actions, [\&DelMsgBodyR, 'C', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-t(.+)/ and do { push @$actions, [\&FlagRemote, $1]; last SWITCH; };
-            $arg eq '-D' and do { push @$actions, [\&DelAll]; $dactions++; last SWITCH; };
-            $arg eq '-V' and do { push @$actions, [\&Version]; last SWITCH; };
-            Usage();
+            $arg eq '-s' and do { push @$actions, [\&stats]; last SWITCH; };
+            $arg =~ /^-m(.+)/ and do { push @$actions, [\&view_msg, $1]; last SWITCH; };
+            $arg =~ /^-f(.+)/ and do { push @$actions, [\&del_msg_from_sender, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-F(.+)/ and do { push @$actions, [\&del_msg_from_sender_r, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-d(.+)/ and do { push @$actions, [\&del_msg, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-S(.+)/ and do { push @$actions, [\&del_msg_subj, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-h(.+)/ and do { push @$actions, [\&del_msg_header_r, 'I', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-b(.+)/ and do { push @$actions, [\&del_msg_body_r, 'I', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-H(.+)/ and do { push @$actions, [\&del_msg_header_r, 'C', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-B(.+)/ and do { push @$actions, [\&del_msg_body_r, 'C', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-t(.+)/ and do { push @$actions, [\&flag_remote, $1]; last SWITCH; };
+            $arg eq '-D' and do { push @$actions, [\&del_all]; $dactions++; last SWITCH; };
+            $arg eq '-V' and do { push @$actions, [\&version]; last SWITCH; };
+            usage();
         }
     }
 
@@ -210,10 +210,10 @@ sub parse_args {
 }
 
 # Stop qmail
-sub stopQmail {
+sub stop_qmail {
 
     # If qmail is running, we stop it
-    if (my $qmpid = qmailPid()) {
+    if (my $qmpid = qmail_pid()) {
 
         # If there is a system script available, we use it
         if ($stopqmail ne '') {
@@ -222,14 +222,14 @@ sub stopQmail {
             if (system($stopqmail) > 0) {
                 return 0;
             }
-            sleep 1 while qmailPid();
+            sleep 1 while qmail_pid();
 
         # Otherwise, we're killers!
         } else {
             print "Terminating qmail (pid $qmpid)... this might take a while if qmail is working.\n";
             kill 'TERM', $qmpid;
     
-            sleep 1 while qmailPid();
+            sleep 1 while qmail_pid();
         }
 
     # If it isn't, we don't. We also set a flag which assures we don't
@@ -243,10 +243,10 @@ sub stopQmail {
 }
 
 # Start qmail
-sub startQmail {
+sub start_qmail {
 
     # If qmail is running, why restart it?
-    if (my $qmpid = qmailPid()) {
+    if (my $qmpid = qmail_pid()) {
         print "Qmail is already running again, so it won't be restarted.\n";
         return;
     }
@@ -266,7 +266,7 @@ sub startQmail {
 }
 
 # Returns the subject of a message
-sub getSubject {
+sub get_subject {
     my $msg = shift;
     my $msgsub;
     open (my $msg_fh, '<', "${queue}mess/$msg")
@@ -283,7 +283,7 @@ sub getSubject {
     return $msgsub;
 }
 
-sub getSender {
+sub get_sender {
     my $msg = shift;
 
     open (my $msg_fh, '<', "${queue}/info/$msg")
@@ -300,10 +300,10 @@ sub getSender {
 
 # Tries to send all queued messages now 
 # This is achieved by sending an ALRM signal to qmail-send
-sub SendMsgs {
+sub send_msgs {
 
     # If qmail is running, we force sending of messages
-    if (my $qmpid = qmailPid()) {
+    if (my $qmpid = qmail_pid()) {
 
         kill 'ALRM', $qmpid;
 
@@ -315,7 +315,7 @@ sub SendMsgs {
     return;
 }
 
-sub showMessageInfo {
+sub show_msg_info {
     my (%ret, %date, %from, %subj, %to, %cc, %fsize);
     my $msg = shift;
 # Read return path
@@ -366,39 +366,39 @@ sub showMessageInfo {
 # Display message list
 # pass parameter of queue NOT to list! i.e. if you want remote only, pass L
 # if you want local, pass R  if you want all pass anything else eg A
-sub ListMsg {
+sub list_msg {
     my $q = shift;
     
     for my $msg (keys %msglist) {
         if ($summary == 0) {
             if ($q eq 'L') {
                 if ($msglist{$msg}{'local'}) {
-                    showMessageInfo($msg);
+                    show_msg_info($msg);
                 }
             }
             if ($q eq 'R') {
                 if ($msglist{$msg}{'remote'}) {
-                    showMessageInfo($msg);
+                    show_msg_info($msg);
                 }
             }
             if ($q eq 'A') {
                 if ($msglist{$msg}{'local'}) {
-                    showMessageInfo($msg);
+                    show_msg_info($msg);
                 }
                 if ($msglist{$msg}{'remote'}) {
-                    showMessageInfo($msg);
+                    show_msg_info($msg);
                 }
             }
         } ## end if ($summary == 0)
     } ## end foreach my $msg (@msglist)
 
-    Stats();
+    stats();
     return;
 }
 
 # View a message in the queue
 #
-sub ViewMsg {
+sub view_msg {
     my $rmsg = shift;
     
     if ($rmsg =~ /\D/) {
@@ -429,7 +429,7 @@ sub ViewMsg {
     return;    
 }
 
-sub TrashMsgs {
+sub trash_msgs {
     my @todelete = ();
     my $grouped = 0;
     my $deleted = 0;
@@ -465,7 +465,7 @@ sub TrashMsgs {
     return;
 }
 
-sub FlagMsgs {
+sub flag_msgs {
     my $now = time;
     my @flagqueue = ();
     my $flagged = 0;
@@ -485,7 +485,7 @@ sub FlagMsgs {
 }
 
 # Delete a message in the queue
-sub DelMsg {
+sub del_msg {
     my $rmsg = shift;
     
     if ($rmsg =~ /\D/) {
@@ -513,7 +513,7 @@ sub DelMsg {
     return;
 }
 
-sub DelMsgFromSender {
+sub del_msg_from_sender {
     my $badsender = shift;
 
     print "Looking for messages from $badsender\n";
@@ -521,7 +521,7 @@ sub DelMsgFromSender {
     my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'sender'}) {
-            my $sender = getSender($msg);
+            my $sender = get_sender($msg);
             if ($sender eq $badsender) {
                 $ok = 1;
                 $dmes = 1;
@@ -539,7 +539,7 @@ sub DelMsgFromSender {
     return;
 }
 
-sub DelMsgFromSenderR {
+sub del_msg_from_sender_r {
     my $badsender = shift;
 
     print "Looking for messages from senders matching $badsender\n";
@@ -547,7 +547,7 @@ sub DelMsgFromSenderR {
     my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'sender'}) {
-           my $sender = getSender($msg);
+           my $sender = get_sender($msg);
            if ($sender =~ /$badsender/) {
                $ok = 1;
                $dmes = 1;
@@ -565,7 +565,7 @@ sub DelMsgFromSenderR {
     return;
 }
 
-sub DelMsgHeaderR {
+sub del_msg_header_r {
     my $case = shift;
     my $re = shift;
 
@@ -610,7 +610,7 @@ sub DelMsgHeaderR {
     return;
 }
 
-sub DelMsgBodyR {
+sub del_msg_body_r {
     my $case = shift;
     my $re = shift;
     my $nomoreheaders = 0;
@@ -660,7 +660,7 @@ sub DelMsgBodyR {
     return;
 }
 
-sub DelMsgSubj {
+sub del_msg_subj {
     my $subject = shift;
 
     print "Looking for messages with Subject: $subject\n";
@@ -669,7 +669,7 @@ sub DelMsgSubj {
     my $ok = 0;
     for my $msg (keys %msglist) {
         my ($dirno, $msgno) = split(/\//, $msg);
-        my $msgsub = getSubject($msg);
+        my $msgsub = get_subject($msg);
 
         if ($msgsub and $msgsub =~ /$subject/) {
             $ok = 1;
@@ -690,7 +690,7 @@ sub DelMsgSubj {
 
 
 # Delete all messages in the queue (thanks Kasper Holtze)
-sub DelAll {
+sub del_all {
 
     # Search messages
     my $ok = 0;
@@ -710,7 +710,7 @@ sub DelAll {
     return;
 }
 
-sub FlagRemote {
+sub flag_remote {
     my $re = shift;
 
     print "Looking for messages with recipients in $re\n";
@@ -735,13 +735,13 @@ sub FlagRemote {
         return;
     }
 
-    FlagMsgs();
+    flag_msgs();
 
     return;
 }
 
 # Make statistics
-sub Stats {
+sub stats {
     my $total = 0;
     my $l = 0;
     my $r = 0;
@@ -765,7 +765,7 @@ sub Stats {
 }
 
 # Retrieve pid of qmail-send
-sub qmailPid {
+sub qmail_pid {
     my $qmpid = `$pidcmd`;
     chomp ($qmpid);
     $qmpid =~ s/\s+//g;
@@ -774,7 +774,7 @@ sub qmailPid {
 }
 
 # Print help
-sub Usage {
+sub usage {
     print "qmHandle v$version\n";
     print "Copyright 1998-2003 Michele Beltrame\n\n";
     print "Available parameters:\n";
@@ -806,7 +806,7 @@ sub Usage {
 }
 
 # Print help
-sub Version {
+sub version {
     print "qmHandle v$version\n";
     return;
 }
