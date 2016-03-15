@@ -178,6 +178,7 @@ foreach my $action (@actions) {
 
 # In case of deletion actions, restart qmail
 if ($dactions) {
+    TrashMsgs();
     startQmail() or die "Could not stop qmail: $!\n";
 }
 
@@ -481,16 +482,8 @@ sub DelMsg {
     # If the message isn't found, print a notice
     if (!$ok) {
         print "Message $rmsg not found in the queue!\n";
-        return;
     }
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -515,16 +508,8 @@ sub DelMsgFromSender {
 # If no messages are found, print a notice
     if (!$ok) {
         print "No messages from $badsender found in the queue!\n";
-        return;
     } 
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -549,16 +534,8 @@ sub DelMsgFromSenderR {
 # If no messages are found, print a notice
     if (!$ok) {
         print "No messages from senders matching $badsender found in the queue!\n";
-        return;
     } 
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -602,16 +579,8 @@ sub DelMsgHeaderR {
     # If no messages are found, print a notice
     if (!$ok) {
         print "No messages with headers matching $re found in the queue!\n";
-        return;
     } 
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -660,16 +629,8 @@ sub DelMsgBodyR {
     # If no messages are found, print a notice
     if (!$ok) {
         print "No messages with body matching $re found in the queue!\n";
-        return;
     }
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -696,16 +657,8 @@ sub DelMsgSubj {
     # If no messages are found, print a notice
     if (!$ok) {
         print "No messages matching Subject \"$subject\" found in the queue!\n";
-        return;
     }
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
@@ -726,16 +679,8 @@ sub DelAll {
     # If no messages are found, print a notice
     if (!$ok) {
         print "No messages found in the queue!\n";
-        return;
     } 
-    if ($dmes == 1) {
-        if ($dactions == 1) {
-            TrashMsgs();
-        }
-        else {
-            $dactions--;
-        }
-    }
+
     return;
 }
 
