@@ -54,9 +54,7 @@ my $pidcmd = 'pidof qmail-send';
 ####################  USER CONFIGURATION END  ####################
 
 # Print usage if no arguments
-if ($#ARGV == -1) {
-    &Usage();
-}
+@ARGV or Usage();
 
 # Get command line options
 
