@@ -74,7 +74,7 @@ my $dactions = 0;
 my $actions = parse_args(@ARGV);
 
 # Set "global" variables
-my $norestart = 0;
+my $restart;
 my @todel = ();
 my @toflag = ();
 my $dmes = 0;
@@ -87,9 +87,9 @@ my %bouncehash = ();
 
 analyse_msgs($queue);
 
-# In case of deletion actions, stop qmail
+# If we want to delete stuff, then stop qmail.
 if ($dactions) {
-    stop_qmail() or die "Could not stop qmail: $!\n";
+    $restart = stop_qmail();
 }
 
 # Execute actions    
@@ -98,11 +98,14 @@ foreach my $action (@$actions) {
    $sub->(@$action);         # Others the arguments, if any
 }
 
-# In case of deletion actions, restart qmail
+# If we have planned deletions, then do them.
 if ($dactions) {
     trash_msgs();
-    start_qmail() or die "Could not stop qmail: $!\n";
 }
+
+# If we stopped qmail, then restart it
+$restart and start_qmail();
+
 
 # ##### SERVICE FUNCTIONS #####
 
@@ -301,7 +304,7 @@ sub stop_qmail {
 
             print "Calling system script to terminate qmail...\n";
             if (system($stopqmail) > 0) {
-                return 0;
+                die 'Could not stop qmail';
             }
             sleep 1 while qmail_pid();
 
@@ -314,11 +317,11 @@ sub stop_qmail {
             sleep 1 while qmail_pid();
         }
 
-    # If it isn't, we don't. We also set a flag which assures we don't
-    # restart it later either (the user might not want this)
+    # If it isn't, we don't. We also return a false value so our caller
+    # knows they might not want to restart it later.
     } else {
         print "Qmail isn't running... no need to stop it.\n";
-        $norestart = 1;
+        return 0;
     }
 
     return 1;
@@ -330,14 +333,6 @@ sub start_qmail {
     # If qmail is running, why restart it?
     if (my $qmpid = qmail_pid()) {
         print "Qmail is already running again, so it won't be restarted.\n";
-        return 1;
-    }
-
-    # If it wasn't running before qmHandle was launched,
-    # it's better leave is this way
-    if ($norestart) {
-        print "Qmail wasn't running when qmHandle was started, ",
-              "so it won't be restarted.\n";
         return 1;
     }
 
