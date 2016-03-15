@@ -2,7 +2,8 @@
 #
 # qmHandle
 #
-# Copyright(c) 1998 -> 2003 Michele Beltrame <mb@italpro.net>
+# Copyright (c) 2016 Dave Cross <dave@perlhacks.com>
+# Based on original version by Michele Beltrame <mb@italpro.net>
 #
 # This program is distributed under the GNU GPL.
 # For more information have a look at http://www.gnu.org
@@ -12,8 +13,10 @@ use warnings;
 
 use Term::ANSIColor;
 use Getopt::Std;
+use File::Basename;
 
-my $version = '1.3.2';
+my $version = '2.0.0 [alpha]';
+my $me = basename $0;
 
 #################### USER CONFIGURATION BEGIN ####################
 
@@ -865,8 +868,9 @@ sub qmail_pid {
 # Print help
 sub usage {
     print <<"END_OF_HELP";
-qmHandle v$version
-Copyright 1998-2003 Michele Beltrame
+$me v$version
+Copyright (c) 2016 Dave Cross <dave\@perlhacks.com>
+Based on original version by Michele Beltrame <mb\@italpro.net>
 
 Available parameters:
   -a       : try to send queued messages now (qmail must be running)
@@ -892,7 +896,7 @@ Additional (optional) parameters:
   -N       : list message numbers only
            (to be used either with -l, -L or -R)
 
-You can view/delete multiple message i.e. -d123 -v456 -d567
+You can view/delete multiple message i.e. -d123 -m456 -d567
 
 END_OF_HELP
 
@@ -901,7 +905,7 @@ END_OF_HELP
 
 # Print help
 sub version {
-    print "qmHandle v$version\n";
+    print "$me v$version\n";
     return;
 }
 
