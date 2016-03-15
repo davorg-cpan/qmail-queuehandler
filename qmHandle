@@ -70,7 +70,8 @@ my @todel = ();
 my @toflag = ();
 my $dmes = 0;
 
-# Create a hash of messages in queue and the type of recipients they have and whether they are bouncing.
+# Create a hash of messages in queue and the type of recipients they have
+# and whether they are bouncing.
 my %msglist = ();
 my %todohash = ();
 my %bouncehash = ();
@@ -183,25 +184,90 @@ sub parse_args {
 
     foreach my $arg (@$ARGV) {
         SWITCH: {
-            $arg eq '-a' and do { push @$actions, [\&send_msgs]; last SWITCH; };
-            $arg eq '-l' and do { push @$actions, [\&list_msg, 'A']; last SWITCH; };
-            $arg eq '-L' and do { push @$actions, [\&list_msg, 'L']; last SWITCH; };
-            $arg eq '-R' and do { push @$actions, [\&list_msg, 'R']; last SWITCH; };
-            $arg eq '-N' and do { $summary = 1; last SWITCH; };
-            $arg eq '-c' and do { ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m"); last SWITCH; };
-            $arg eq '-s' and do { push @$actions, [\&stats]; last SWITCH; };
-            $arg =~ /^-m(.+)/ and do { push @$actions, [\&view_msg, $1]; last SWITCH; };
-            $arg =~ /^-f(.+)/ and do { push @$actions, [\&del_msg_from_sender, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-F(.+)/ and do { push @$actions, [\&del_msg_from_sender_r, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-d(.+)/ and do { push @$actions, [\&del_msg, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-S(.+)/ and do { push @$actions, [\&del_msg_subj, $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-h(.+)/ and do { push @$actions, [\&del_msg_header_r, 'I', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-b(.+)/ and do { push @$actions, [\&del_msg_body_r, 'I', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-H(.+)/ and do { push @$actions, [\&del_msg_header_r, 'C', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-B(.+)/ and do { push @$actions, [\&del_msg_body_r, 'C', $1]; $dactions++; last SWITCH; };
-            $arg =~ /^-t(.+)/ and do { push @$actions, [\&flag_remote, $1]; last SWITCH; };
-            $arg eq '-D' and do { push @$actions, [\&del_all]; $dactions++; last SWITCH; };
-            $arg eq '-V' and do { push @$actions, [\&version]; last SWITCH; };
+            $arg eq '-a' and do {
+                push @actions, [\&send_msgs];
+                last SWITCH;
+            };
+            $arg eq '-l' and do {
+                push @actions, [\&list_msg, 'A'];
+                last SWITCH;
+            };
+            $arg eq '-L' and do {
+                push @actions, [\&list_msg, 'L'];
+                last SWITCH;
+            };
+            $arg eq '-R' and do {
+                push @actions, [\&list_msg, 'R'];
+                last SWITCH;
+            };
+            $arg eq '-N' and do {
+                $summary = 1;
+                last SWITCH;
+            };
+            $arg eq '-c' and do {
+                ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m");
+                last SWITCH;
+            };
+            $arg eq '-s' and do {
+                push @actions, [\&stats];
+                last SWITCH;
+            };
+            $arg =~ /^-m(.+)/ and do {
+                push @actions, [\&view_msg, $1];
+                last SWITCH;
+            };
+            $arg =~ /^-f(.+)/ and do {
+                push @actions, [\&del_msg_from_sender, $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-F(.+)/ and do {
+                push @actions, [\&del_msg_from_sender_r, $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-d(.+)/ and do {
+                push @actions, [\&del_msg, $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-S(.+)/ and do {
+                push @$actions, [\&del_msg_subj, $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-h(.+)/ and do {
+                push @$actions, [\&del_msg_header_r, 'I', $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-b(.+)/ and do {
+                push @$actions, [\&del_msg_body_r, 'I', $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-H(.+)/ and do {
+                push @$actions, [\&del_msg_header_r, 'C', $1];
+                $dactions++;
+                last SWITCH;
+                };
+            $arg =~ /^-B(.+)/ and do {
+                push @$actions, [\&del_msg_body_r, 'C', $1];
+                $dactions++;
+                last SWITCH;
+            };
+            $arg =~ /^-t(.+)/ and do {
+                push @$actions, [\&flag_remote, $1];
+                last SWITCH;
+            };
+            $arg eq '-D' and do {
+                push @$actions, [\&del_all];
+                $dactions++;
+                last SWITCH; };
+            $arg eq '-V' and do {
+                push @$actions, [\&version];
+                last SWITCH;
+                };
             usage();
         }
     }
@@ -226,7 +292,8 @@ sub stop_qmail {
 
         # Otherwise, we're killers!
         } else {
-            print "Terminating qmail (pid $qmpid)... this might take a while if qmail is working.\n";
+            print "Terminating qmail (pid $qmpid)... ",
+                  "this might take a while if qmail is working.\n";
             kill 'TERM', $qmpid;
     
             sleep 1 while qmail_pid();
@@ -251,9 +318,11 @@ sub start_qmail {
         return;
     }
 
-    # If it wasn't running before qmHandle was launched, it's better leave is this way
+    # If it wasn't running before qmHandle was launched,
+    # it's better leave is this way
     if ($norestart) {
-        print "Qmail wasn't running when qmHandle was started, so it won't be restarted.\n";
+        print "Qmail wasn't running when qmHandle was started, ",
+              "so it won't be restarted.\n";
         return;
     }
 
@@ -287,7 +356,8 @@ sub get_sender {
     my $msg = shift;
 
     open (my $msg_fh, '<', "${queue}/info/$msg")
-        or die("cannot open info file ${queue}/info/$msg! Is qmail-send running?\n");
+        or die("cannot open info file ${queue}/info/$msg! ",
+               "Is qmail-send running?\n");
     my $sender = <$msg_fh>;
     substr($sender, 0, 1) = '';
     chop ($sender);
@@ -559,7 +629,8 @@ sub del_msg_from_sender_r {
     }
 # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages from senders matching $badsender found in the queue!\n";
+        print "No messages from senders matching ",
+              "$badsender found in the queue!\n";
     } 
 
     return;
@@ -573,7 +644,8 @@ sub del_msg_header_r {
 
     my $ok = 0;
     for my $msg (keys %msglist) {
-    open (my $msg_fh, ',', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
+    open (my $msg_fh, ',', "${queue}mess/$msg")
+        or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
         if ($case eq 'C') {
             if (/$re/) {
@@ -619,7 +691,8 @@ sub del_msg_body_r {
 
     my $ok = 0;
     for my $msg (keys %msglist) {
-    open (my $msg_fh, '<', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
+    open (my $msg_fh, '<', "${queue}mess/$msg")
+        or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
         if ($nomoreheaders == 1) {
             if ($case eq 'C') {
@@ -718,14 +791,17 @@ sub flag_remote {
     my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'remote'}) {
-            open (my $msg_fh, '<', "${queue}remote/$msg") or die("cannot open remote file for message $msg! Is qmail-send running?\n");
+            open (my $msg_fh, '<', "${queue}remote/$msg")
+                or die("cannot open remote file for message $msg! ",
+                       "Is qmail-send running?\n");
             my $recipients = <$msg_fh>;
             chop($recipients);
             close ($msg_fh);
             if ($recipients =~ /$re/) {
                 $ok = 1;
                 push @toflag, $msg;
-                print "Message $msg being tagged for earlier retry (and lengthened stay in queue)!\n"
+                print "Message $msg being tagged for earlier retry ",
+                      "(and lengthened stay in queue)!\n"
             }
         }
     }
