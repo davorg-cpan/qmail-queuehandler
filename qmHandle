@@ -10,6 +10,8 @@
 use strict;
 use warnings;
 
+use Term::ANSIColor;
+
 my $version = '1.3.2';
 
 #################### USER CONFIGURATION BEGIN ####################
@@ -59,6 +61,12 @@ my $pidcmd = 'pidof qmail-send';
 # Get command line options
 
 my ($cmsg, $cstat, $cend) = ('', '', '');
+my @colours = (
+    color('bold bright_blue'),
+    color('bold bright_red'),
+    color('reset'),
+);
+
 my $summary = 0;
 my $dactions = 0;
 
@@ -208,7 +216,7 @@ sub parse_args {
                 last SWITCH;
             };
             $arg eq '-c' and do {
-                ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m");
+                ($cmsg, $cstat, $cend) = @colours;
                 last SWITCH;
             };
             $arg eq '-s' and do {
@@ -444,7 +452,7 @@ sub list_msg {
     my $q = shift;
     
     for my $msg (keys %msglist) {
-        if ($summary == 0) {
+        if (!$summary) {
             if ($q eq 'L') {
                 if ($msglist{$msg}{'local'}) {
                     show_msg_info($msg);
