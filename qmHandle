@@ -60,33 +60,9 @@ my $pidcmd = 'pidof qmail-send';
 
 my ($cmsg, $cstat, $cend) = ('', '', '');
 my $summary = 0;
-my @actions = ();
 my $dactions = 0;
 
-foreach my $arg (@ARGV) {
-  SWITCH: {
-      $arg eq '-a' and do { push @actions, [\&SendMsgs]; last SWITCH; };
-      $arg eq '-l' and do { push @actions, [\&ListMsg, 'A']; last SWITCH; };
-      $arg eq '-L' and do { push @actions, [\&ListMsg, 'L']; last SWITCH; };
-      $arg eq '-R' and do { push @actions, [\&ListMsg, 'R']; last SWITCH; };
-      $arg eq '-N' and do { $summary = 1; last SWITCH; };
-      $arg eq '-c' and do { ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m"); last SWITCH; };
-      $arg eq '-s' and do { push @actions, [\&Stats]; last SWITCH; };
-      $arg =~ /^-m(.+)/ and do { push @actions, [\&ViewMsg, $1]; last SWITCH; };
-      $arg =~ /^-f(.+)/ and do { push @actions, [\&DelMsgFromSender, $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-F(.+)/ and do { push @actions, [\&DelMsgFromSenderR, $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-d(.+)/ and do { push @actions, [\&DelMsg, $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-S(.+)/ and do { push @actions, [\&DelMsgSubj, $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-h(.+)/ and do { push @actions, [\&DelMsgHeaderR, 'I', $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-b(.+)/ and do { push @actions, [\&DelMsgBodyR, 'I', $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-H(.+)/ and do { push @actions, [\&DelMsgHeaderR, 'C', $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-B(.+)/ and do { push @actions, [\&DelMsgBodyR, 'C', $1]; $dactions++; last SWITCH; };
-      $arg =~ /^-t(.+)/ and do { push @actions, [\&FlagRemote, $1]; last SWITCH; };
-      $arg eq '-D' and do { push @actions, [\&DelAll]; $dactions++; last SWITCH; };
-      $arg eq '-V' and do { push @actions, [\&Version]; last SWITCH; };
-      Usage();
-  }
-}
+my $actions = parse_args();
 
 # Set "global" variables
 my $norestart = 0;
@@ -99,71 +75,7 @@ my %msglist = ();
 my %todohash = ();
 my %bouncehash = ();
 
-opendir(my $messdir,"${queue}mess");
-my (@dirlist) = grep { !/\./ } readdir $messdir;
-closedir $messdir;
-opendir(my $tododir,"${queue}todo");
-my (@todolist) = grep { !/\./ } readdir $tododir;
-closedir $tododir;
-if ($bigtodo == 0) {
-    foreach my $tododir (@todolist) {
-        opendir (my $subdir,"${queue}todo/$tododir");
-        my (@todofiles) = grep { !/\./ }
-                          map  { "$tododir/$_" } readdir $subdir;
-        foreach my $todofile (@todofiles) {
-            $msglist{ $todofile }{ 'todo' } = $todofile;
-        }
-    }
-} else {
-    foreach my $todofile (@todolist) {
-        $todohash{$todofile} = $todofile;
-    }
-}
-opendir(my $bouncedir,"${queue}bounce");
-my (@bouncelist) = grep { !/\./ } readdir $bouncedir;
-closedir $bouncedir;
-foreach my $bouncefile (@bouncelist) {
-    $bouncehash{$bouncefile} = 'B';
-}
-foreach my $dir (@dirlist) {
-    opendir (my $subdir,"${queue}mess/$dir");
-    my (@files) = grep { !/\./ }
-                  map  { "$dir/$_" } readdir $subdir;
-    opendir (my $infosubdir,"${queue}info/$dir");
-    my (@infofiles) = grep { !/\./ }
-                      map  { "$dir/$_" } readdir $infosubdir;
-    opendir (my $localsubdir,"${queue}local/$dir");
-    my (@localfiles) = grep { !/\./ }
-                       map  { "$dir/$_" } readdir $localsubdir;
-    opendir (my $remotesubdir,"${queue}remote/$dir");
-    my (@remotefiles) = grep { !/\./ }
-                        map  { "$dir/$_" } readdir $remotesubdir;
-    foreach my $infofile (@infofiles) {
-        $msglist{$infofile}{'sender'} = 'S';
-    }
-    foreach my $localfile (@localfiles) {
-        $msglist{$localfile}{'local'} = 'L';
-    }
-    foreach my $remotefile (@remotefiles) {
-        $msglist{$remotefile}{'remote'} = 'R';
-    }
-    foreach my $file (@files) {
-        my ($dirno, $msgno) = split(/\//, $file);
-        if ($bouncehash{$msgno}) {
-            $msglist{ $file }{ 'bounce' } = 'B';
-        }
-        if ($bigtodo == 1) {
-            if ($todohash{$msgno}) {
-                $msglist{ $file }{ 'todo' } = "$msgno";
-            }
-        }
-    }
-    closedir $subdir;
-    closedir $infosubdir;
-    closedir $localsubdir;
-    closedir $remotesubdir;
-}
-
+analyse_msgs();
 
 # In case of deletion actions, stop qmail
 if ($dactions) {
@@ -171,7 +83,7 @@ if ($dactions) {
 }
 
 # Execute actions    
-foreach my $action (@actions) {
+foreach my $action (@$actions) {
    my $sub = shift @$action; # First element is the sub
    $sub->(@$action);         # Others the arguments, if any
 }
@@ -183,6 +95,119 @@ if ($dactions) {
 }
 
 # ##### SERVICE FUNCTIONS #####
+
+sub analyse_msgs {
+    opendir(my $messdir,"${queue}mess");
+    my (@dirlist) = grep { !/\./ } readdir $messdir;
+    closedir $messdir;
+
+    opendir(my $tododir,"${queue}todo");
+    my (@todolist) = grep { !/\./ } readdir $tododir;
+    closedir $tododir;
+
+    if ($bigtodo == 0) {
+        foreach my $tododir (@todolist) {
+            opendir (my $subdir,"${queue}todo/$tododir");
+            my (@todofiles) = grep { !/\./ }
+                              map  { "$tododir/$_" } readdir $subdir;
+            foreach my $todofile (@todofiles) {
+                $msglist{ $todofile }{ 'todo' } = $todofile;
+            }
+        }
+    } else {
+        foreach my $todofile (@todolist) {
+            $todohash{$todofile} = $todofile;
+        }
+    }
+
+    opendir(my $bouncedir,"${queue}bounce");
+    my (@bouncelist) = grep { !/\./ } readdir $bouncedir;
+    closedir $bouncedir;
+
+    foreach my $bouncefile (@bouncelist) {
+        $bouncehash{$bouncefile} = 'B';
+    }
+
+    foreach my $dir (@dirlist) {
+        opendir (my $subdir,"${queue}mess/$dir");
+        my (@files) = grep { !/\./ }
+                      map  { "$dir/$_" } readdir $subdir;
+
+        opendir (my $infosubdir,"${queue}info/$dir");
+        my (@infofiles) = grep { !/\./ }
+                          map  { "$dir/$_" } readdir $infosubdir;
+
+        opendir (my $localsubdir,"${queue}local/$dir");
+        my (@localfiles) = grep { !/\./ }
+                           map  { "$dir/$_" } readdir $localsubdir;
+
+        opendir (my $remotesubdir,"${queue}remote/$dir");
+        my (@remotefiles) = grep { !/\./ }
+                            map  { "$dir/$_" } readdir $remotesubdir;
+
+        foreach my $infofile (@infofiles) {
+            $msglist{$infofile}{'sender'} = 'S';
+        }
+
+        foreach my $localfile (@localfiles) {
+            $msglist{$localfile}{'local'} = 'L';
+        }
+
+        foreach my $remotefile (@remotefiles) {
+            $msglist{$remotefile}{'remote'} = 'R';
+        }
+
+        foreach my $file (@files) {
+            my ($dirno, $msgno) = split(/\//, $file);
+            if ($bouncehash{$msgno}) {
+                $msglist{ $file }{ 'bounce' } = 'B';
+            }
+            if ($bigtodo == 1) {
+                if ($todohash{$msgno}) {
+                    $msglist{ $file }{ 'todo' } = "$msgno";
+                }
+            }
+        }
+
+        closedir $subdir;
+        closedir $infosubdir;
+        closedir $localsubdir;
+        closedir $remotesubdir;
+    }
+
+    return;
+}
+
+sub parse_args {
+    my @actions;
+
+    foreach my $arg (@$ARGV) {
+        SWITCH: {
+            $arg eq '-a' and do { push @$actions, [\&SendMsgs]; last SWITCH; };
+            $arg eq '-l' and do { push @$actions, [\&ListMsg, 'A']; last SWITCH; };
+            $arg eq '-L' and do { push @$actions, [\&ListMsg, 'L']; last SWITCH; };
+            $arg eq '-R' and do { push @$actions, [\&ListMsg, 'R']; last SWITCH; };
+            $arg eq '-N' and do { $summary = 1; last SWITCH; };
+            $arg eq '-c' and do { ($cmsg, $cstat, $cend) = ("\e[01;34m", "\e[01;31m", "\e[00m"); last SWITCH; };
+            $arg eq '-s' and do { push @$actions, [\&Stats]; last SWITCH; };
+            $arg =~ /^-m(.+)/ and do { push @$actions, [\&ViewMsg, $1]; last SWITCH; };
+            $arg =~ /^-f(.+)/ and do { push @$actions, [\&DelMsgFromSender, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-F(.+)/ and do { push @$actions, [\&DelMsgFromSenderR, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-d(.+)/ and do { push @$actions, [\&DelMsg, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-S(.+)/ and do { push @$actions, [\&DelMsgSubj, $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-h(.+)/ and do { push @$actions, [\&DelMsgHeaderR, 'I', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-b(.+)/ and do { push @$actions, [\&DelMsgBodyR, 'I', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-H(.+)/ and do { push @$actions, [\&DelMsgHeaderR, 'C', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-B(.+)/ and do { push @$actions, [\&DelMsgBodyR, 'C', $1]; $dactions++; last SWITCH; };
+            $arg =~ /^-t(.+)/ and do { push @$actions, [\&FlagRemote, $1]; last SWITCH; };
+            $arg eq '-D' and do { push @$actions, [\&DelAll]; $dactions++; last SWITCH; };
+            $arg eq '-V' and do { push @$actions, [\&Version]; last SWITCH; };
+            Usage();
+        }
+    }
+
+    return \@actions;
+}
 
 # Stop qmail
 sub stopQmail {
@@ -372,6 +397,7 @@ sub ListMsg {
 }
 
 # View a message in the queue
+#
 sub ViewMsg {
     my $rmsg = shift;
     
