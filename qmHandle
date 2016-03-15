@@ -62,7 +62,7 @@ my ($cmsg, $cstat, $cend) = ('', '', '');
 my $summary = 0;
 my $dactions = 0;
 
-my $actions = parse_args();
+my $actions = parse_args(@ARGV);
 
 # Set "global" variables
 my $norestart = 0;
@@ -182,9 +182,10 @@ sub analyse_msgs {
 }
 
 sub parse_args {
+    my @args = @_;
     my @actions;
 
-    foreach my $arg (@$ARGV) {
+    foreach my $arg (@args) {
         SWITCH: {
             $arg eq '-a' and do {
                 push @actions, [\&send_msgs];
