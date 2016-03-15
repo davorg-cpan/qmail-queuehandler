@@ -302,7 +302,7 @@ sub stop_qmail {
         # If there is a system script available, we use it
         if ($stopqmail ne '') {
 
-            print "Calling system script to terminate qmail...\n";
+            warn "Calling system script to terminate qmail...\n";
             if (system($stopqmail) > 0) {
                 die 'Could not stop qmail';
             }
@@ -310,8 +310,8 @@ sub stop_qmail {
 
         # Otherwise, we're killers!
         } else {
-            print "Terminating qmail (pid $qmpid)... ",
-                  "this might take a while if qmail is working.\n";
+            warn "Terminating qmail (pid $qmpid)... ",
+                 "this might take a while if qmail is working.\n";
             kill 'TERM', $qmpid;
     
             sleep 1 while qmail_pid();
@@ -320,7 +320,7 @@ sub stop_qmail {
     # If it isn't, we don't. We also return a false value so our caller
     # knows they might not want to restart it later.
     } else {
-        print "Qmail isn't running... no need to stop it.\n";
+        warn "Qmail isn't running... no need to stop it.\n";
         return 0;
     }
 
@@ -332,14 +332,14 @@ sub start_qmail {
 
     # If qmail is running, why restart it?
     if (my $qmpid = qmail_pid()) {
-        print "Qmail is already running again, so it won't be restarted.\n";
+        warn "Qmail is already running again, so it won't be restarted.\n";
         return 1;
     }
 
     # In any other case, we restart it
-    print "Restarting qmail... ";
+    warn "Restarting qmail... ";
     system($startqmail);
-    print "done (hopefully).\n";
+    warn "done (hopefully).\n";
 
     return 1;
 }
@@ -389,7 +389,7 @@ sub send_msgs {
 
     } else {
 
-        print "Qmail isn't running, can't send messages!\n";
+        warn "Qmail isn't running, can't send messages!\n";
 
     }
     return;
@@ -483,7 +483,7 @@ sub view_msg {
     my $rmsg = shift;
     
     if ($rmsg =~ /\D/) {
-        print "$rmsg is not a valid message number!\n";
+        warn "$rmsg is not a valid message number!\n";
         return;
     }
 
@@ -504,7 +504,7 @@ sub view_msg {
 
     # If the message isn't found, print a notice
     if (!$ok) {
-        print "Message $rmsg not found in the queue!\n";    
+        warn "Message $rmsg not found in the queue!\n";    
     }
 
     return;    
@@ -542,7 +542,7 @@ sub trash_msgs {
     if ($grouped) {
         unlink @todelete;
     }
-    print "Deleted $deleted messages from queue\n";
+    warn "Deleted $deleted messages from queue\n";
     return;
 }
 
@@ -570,7 +570,7 @@ sub del_msg {
     my $rmsg = shift;
     
     if ($rmsg =~ /\D/) {
-        print "$rmsg is not a valid message number!\n";
+        warn "$rmsg is not a valid message number!\n";
         return;
     }
 
@@ -581,14 +581,14 @@ sub del_msg {
             $ok = 1;
             $dmes = 1;
             push @todel, $msg;
-            print "Deleting message $rmsg...\n";
+            warn "Deleting message $rmsg...\n";
             last;
         }
     }
 
     # If the message isn't found, print a notice
     if (!$ok) {
-        print "Message $rmsg not found in the queue!\n";
+        warn "Message $rmsg not found in the queue!\n";
     }
 
     return;
@@ -597,7 +597,7 @@ sub del_msg {
 sub del_msg_from_sender {
     my $badsender = shift;
 
-    print "Looking for messages from $badsender\n";
+    warn "Looking for messages from $badsender\n";
 
     my $ok = 0;
     for my $msg (keys %msglist) {
@@ -614,7 +614,7 @@ sub del_msg_from_sender {
     }
 # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages from $badsender found in the queue!\n";
+        warn "No messages from $badsender found in the queue!\n";
     } 
 
     return;
@@ -623,7 +623,7 @@ sub del_msg_from_sender {
 sub del_msg_from_sender_r {
     my $badsender = shift;
 
-    print "Looking for messages from senders matching $badsender\n";
+    warn "Looking for messages from senders matching $badsender\n";
 
     my $ok = 0;
     for my $msg (keys %msglist) {
@@ -640,8 +640,8 @@ sub del_msg_from_sender_r {
     }
 # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages from senders matching ",
-              "$badsender found in the queue!\n";
+        warn "No messages from senders matching ",
+             "$badsender found in the queue!\n";
     } 
 
     return;
@@ -651,7 +651,7 @@ sub del_msg_header_r {
     my $case = shift;
     my $re = shift;
 
-    print "Looking for messages with headers matching $re\n";
+    warn "Looking for messages with headers matching $re\n";
 
     my $ok = 0;
     for my $msg (keys %msglist) {
@@ -663,7 +663,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 $dmes = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
-                print "Message $msgno slotted for deletion.\n";
+                warn "Message $msgno slotted for deletion.\n";
                 push @todel, $msg;
                 last;
             } elsif ( $_ eq "\n") {
@@ -674,7 +674,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 $dmes = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
-                print "Message $msgno slotted for deletion.\n";
+                warn "Message $msgno slotted for deletion.\n";
                 push @todel, $msg;
                 last;
             } elsif ( $_ eq "\n") {
@@ -687,7 +687,7 @@ sub del_msg_header_r {
     }
     # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages with headers matching $re found in the queue!\n";
+        warn "No messages with headers matching $re found in the queue!\n";
     } 
 
     return;
@@ -698,7 +698,7 @@ sub del_msg_body_r {
     my $re = shift;
     my $nomoreheaders = 0;
 
-    print "Looking for messages with body matching $re\n";
+    warn "Looking for messages with body matching $re\n";
 
     my $ok = 0;
     for my $msg (keys %msglist) {
@@ -711,7 +711,7 @@ sub del_msg_body_r {
                     $ok = 1;
                     $dmes = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
-                    print "Message $msgno slotted for deletion.\n";
+                    warn "Message $msgno slotted for deletion.\n";
                     push @todel, $msg;
                     last;
                 }
@@ -720,7 +720,7 @@ sub del_msg_body_r {
                     $ok = 1;
                     $dmes = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
-                    print "Message $msgno slotted for deletion.\n";
+                    warn "Message $msgno slotted for deletion.\n";
                     push @todel, $msg;
                     last;
                 }
@@ -738,7 +738,7 @@ sub del_msg_body_r {
     }
     # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages with body matching $re found in the queue!\n";
+        warn "No messages with body matching $re found in the queue!\n";
     }
 
     return;
@@ -747,7 +747,7 @@ sub del_msg_body_r {
 sub del_msg_subj {
     my $subject = shift;
 
-    print "Looking for messages with Subject: $subject\n";
+    warn "Looking for messages with Subject: $subject\n";
 
     # Search messages
     my $ok = 0;
@@ -758,7 +758,7 @@ sub del_msg_subj {
         if ($msgsub and $msgsub =~ /$subject/) {
             $ok = 1;
             $dmes = 1;
-            print "Deleting message: $msgno\n";
+            warn "Deleting message: $msgno\n";
             push @todel, $msg;
         }
 
@@ -766,7 +766,7 @@ sub del_msg_subj {
 
     # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages matching Subject \"$subject\" found in the queue!\n";
+        warn "No messages matching Subject \"$subject\" found in the queue!\n";
     }
 
     return;
@@ -782,13 +782,13 @@ sub del_all {
         $ok = 1;
         $dmes = 1;
         my ($dirno, $msgno) = split(/\//, $msg);
-        print "Message $msgno slotted for deletion!\n";
+        warn "Message $msgno slotted for deletion!\n";
         push @todel, $msg;
     }
 
     # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages found in the queue!\n";
+        warn "No messages found in the queue!\n";
     } 
 
     return;
@@ -797,7 +797,7 @@ sub del_all {
 sub flag_remote {
     my $re = shift;
 
-    print "Looking for messages with recipients in $re\n";
+    warn "Looking for messages with recipients in $re\n";
 
     my $ok = 0;
     for my $msg (keys %msglist) {
@@ -811,14 +811,14 @@ sub flag_remote {
             if ($recipients =~ /$re/) {
                 $ok = 1;
                 push @toflag, $msg;
-                print "Message $msg being tagged for earlier retry ",
-                      "(and lengthened stay in queue)!\n"
+                warn "Message $msg being tagged for earlier retry ",
+                     "(and lengthened stay in queue)!\n"
             }
         }
     }
     # If no messages are found, print a notice
     if (!$ok) {
-        print "No messages with recipients in $re found in the queue!\n";
+        warn "No messages with recipients in $re found in the queue!\n";
         return;
     }
 
