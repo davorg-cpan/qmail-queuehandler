@@ -756,11 +756,13 @@ sub stats {
         if ($msglist{$msg}{'todo'} ) { $t++; }
     }
 
-   print "${cstat}Total messages${cend}: $total\n";
-   print "${cstat}Messages with local recipients${cend}: $l\n";
-   print "${cstat}Messages with remote recipients${cend}: $r\n";
-   print "${cstat}Messages with bounces${cend}: $b\n";
-   print "${cstat}Messages in preprocess${cend}: $t\n";
+   print <<"END_OF_STATS";
+${cstat}Total messages${cend}: $total
+${cstat}Messages with local recipients${cend}: $l
+${cstat}Messages with remote recipients${cend}: $r
+${cstat}Messages with bounces${cend}: $b
+${cstat}Messages in preprocess${cend}: $t
+END_OF_STATS
    return;
 }
 
@@ -775,33 +777,38 @@ sub qmail_pid {
 
 # Print help
 sub usage {
-    print "qmHandle v$version\n";
-    print "Copyright 1998-2003 Michele Beltrame\n\n";
-    print "Available parameters:\n";
-    print "  -a       : try to send queued messages now (qmail must be running)\n";
-    print "  -l       : list message queues\n";
-    print "  -L       : list local message queue\n";
-    print "  -R       : list remote message queue\n";
-    print "  -s       : show some statistics\n";
-    print "  -mN      : display message number N\n";
-    print "  -dN      : delete message number N\n";
-    print "  -fsender : delete message from sender\n";
-    print "  -f're'   : delete message from senders matching regular expression re\n";
-    print "  -Stext   : delete all messages that have/contain text as Subject\n";
-    print "  -h're'   : delete all messages with headers matching regular expression re (case insensitive)\n";
-    print "  -b're'   : delete all messages with body matching regular expression re (case insensitive)\n";
-    print "  -H're'   : delete all messages with headers matching regular expression re (case sensitive)\n";
-    print "  -B're'   : delete all messages with body matching regular expression re (case sensitive)\n";
-    print "  -t're'   : flag messages with recipients in regular expression 're' for earlier retry (note: this lengthens the time message can stay in queue)\n";
-    print "  -D       : delete all messages in the queue (local and remote)\n";
-    print "  -V       : print program version\n";
-    print "\n";
-    print "Additional (optional) parameters:\n";
-    print "  -c       : display colored output\n";
-    print "  -N       : list message numbers only\n";
-    print "           (to be used either with -l, -L or -R)\n";
-    print "\n";
-    print "You can view/delete multiple message i.e. -d123 -v456 -d567\n\n";
+    print <<"END_OF_HELP";
+qmHandle v$version
+Copyright 1998-2003 Michele Beltrame
+
+Available parameters:
+  -a       : try to send queued messages now (qmail must be running)
+  -l       : list message queues
+  -L       : list local message queue
+  -R       : list remote message queue
+  -s       : show some statistics
+  -mN      : display message number N
+  -dN      : delete message number N
+  -fsender : delete message from sender
+  -f're'   : delete message from senders matching regular expression re
+  -Stext   : delete all messages that have/contain text as Subject
+  -h're'   : delete all messages with headers matching regular expression re (case insensitive)
+  -b're'   : delete all messages with body matching regular expression re (case insensitive)
+  -H're'   : delete all messages with headers matching regular expression re (case sensitive)
+  -B're'   : delete all messages with body matching regular expression re (case sensitive)
+  -t're'   : flag messages with recipients in regular expression 're' for earlier retry (note: this lengthens the time message can stay in queue)
+  -D       : delete all messages in the queue (local and remote)
+  -V       : print program version
+
+Additional (optional) parameters:
+  -c       : display colored output
+  -N       : list message numbers only
+           (to be used either with -l, -L or -R)
+
+You can view/delete multiple message i.e. -d123 -v456 -d567
+
+END_OF_HELP
+
     exit;
 }
 
