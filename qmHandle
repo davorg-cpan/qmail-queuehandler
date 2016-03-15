@@ -326,7 +326,7 @@ sub start_qmail {
     # If qmail is running, why restart it?
     if (my $qmpid = qmail_pid()) {
         print "Qmail is already running again, so it won't be restarted.\n";
-        return;
+        return 1;
     }
 
     # If it wasn't running before qmHandle was launched,
@@ -334,7 +334,7 @@ sub start_qmail {
     if ($norestart) {
         print "Qmail wasn't running when qmHandle was started, ",
               "so it won't be restarted.\n";
-        return;
+        return 1;
     }
 
     # In any other case, we restart it
