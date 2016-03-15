@@ -99,70 +99,71 @@ my %msglist = ();
 my %todohash = ();
 my %bouncehash = ();
 my ($dirno, $msgno);
-    opendir(my $messdir,"${queue}mess");
-    my (@dirlist) = grep { !/\./ } readdir $messdir;
-    closedir $messdir;
-    opendir(my $tododir,"${queue}todo");
-    my (@todolist) = grep { !/\./ } readdir $tododir;
-    closedir $tododir;
-    if ($bigtodo == 0) {
-        foreach my $tododir (@todolist) {
-            opendir (my $subdir,"${queue}todo/$tododir");
-            my (@todofiles) = grep { !/\./ }
-                              map  { "$tododir/$_" } readdir $subdir;
-            foreach my $todofile (@todofiles) {
-                $msglist{ $todofile }{ 'todo' } = $todofile;
-            }
-        }
-    } else {
-        foreach my $todofile (@todolist) {
-            $todohash{$todofile} = $todofile;
+
+opendir(my $messdir,"${queue}mess");
+my (@dirlist) = grep { !/\./ } readdir $messdir;
+closedir $messdir;
+opendir(my $tododir,"${queue}todo");
+my (@todolist) = grep { !/\./ } readdir $tododir;
+closedir $tododir;
+if ($bigtodo == 0) {
+    foreach my $tododir (@todolist) {
+        opendir (my $subdir,"${queue}todo/$tododir");
+        my (@todofiles) = grep { !/\./ }
+                          map  { "$tododir/$_" } readdir $subdir;
+        foreach my $todofile (@todofiles) {
+            $msglist{ $todofile }{ 'todo' } = $todofile;
         }
     }
-    opendir(my $bouncedir,"${queue}bounce");
-    my (@bouncelist) = grep { !/\./ } readdir $bouncedir;
-    closedir $bouncedir;
-    foreach my $bouncefile (@bouncelist) {
-        $bouncehash{$bouncefile} = 'B';
+} else {
+    foreach my $todofile (@todolist) {
+        $todohash{$todofile} = $todofile;
     }
-    foreach my $dir (@dirlist) {
-        opendir (my $subdir,"${queue}mess/$dir");
-        my (@files) = grep { !/\./ }
-                      map  { "$dir/$_" } readdir $subdir;
-        opendir (my $infosubdir,"${queue}info/$dir");
-        my (@infofiles) = grep { !/\./ }
-                          map  { "$dir/$_" } readdir $infosubdir;
-        opendir (my $localsubdir,"${queue}local/$dir");
-        my (@localfiles) = grep { !/\./ }
-                           map  { "$dir/$_" } readdir $localsubdir;
-        opendir (my $remotesubdir,"${queue}remote/$dir");
-        my (@remotefiles) = grep { !/\./ }
-                            map  { "$dir/$_" } readdir $remotesubdir;
-        foreach my $infofile (@infofiles) {
-            $msglist{$infofile}{'sender'} = 'S';
-        }
-        foreach my $localfile (@localfiles) {
-            $msglist{$localfile}{'local'} = 'L';
-        }
-        foreach my $remotefile (@remotefiles) {
-            $msglist{$remotefile}{'remote'} = 'R';
-        }
-        foreach my $file (@files) {
-            ($dirno, $msgno) = split(/\//, $file);
-            if ($bouncehash{$msgno}) {
-                $msglist{ $file }{ 'bounce' } = 'B';
-            }
-            if ($bigtodo == 1) {
-                if ($todohash{$msgno}) {
-                    $msglist{ $file }{ 'todo' } = "$msgno";
-                }
-            }
-        }
-        closedir $subdir;
-        closedir $infosubdir;
-        closedir $localsubdir;
-        closedir $remotesubdir;
+}
+opendir(my $bouncedir,"${queue}bounce");
+my (@bouncelist) = grep { !/\./ } readdir $bouncedir;
+closedir $bouncedir;
+foreach my $bouncefile (@bouncelist) {
+    $bouncehash{$bouncefile} = 'B';
+}
+foreach my $dir (@dirlist) {
+    opendir (my $subdir,"${queue}mess/$dir");
+    my (@files) = grep { !/\./ }
+                  map  { "$dir/$_" } readdir $subdir;
+    opendir (my $infosubdir,"${queue}info/$dir");
+    my (@infofiles) = grep { !/\./ }
+                      map  { "$dir/$_" } readdir $infosubdir;
+    opendir (my $localsubdir,"${queue}local/$dir");
+    my (@localfiles) = grep { !/\./ }
+                       map  { "$dir/$_" } readdir $localsubdir;
+    opendir (my $remotesubdir,"${queue}remote/$dir");
+    my (@remotefiles) = grep { !/\./ }
+                        map  { "$dir/$_" } readdir $remotesubdir;
+    foreach my $infofile (@infofiles) {
+        $msglist{$infofile}{'sender'} = 'S';
     }
+    foreach my $localfile (@localfiles) {
+        $msglist{$localfile}{'local'} = 'L';
+    }
+    foreach my $remotefile (@remotefiles) {
+        $msglist{$remotefile}{'remote'} = 'R';
+    }
+    foreach my $file (@files) {
+        ($dirno, $msgno) = split(/\//, $file);
+        if ($bouncehash{$msgno}) {
+            $msglist{ $file }{ 'bounce' } = 'B';
+        }
+        if ($bigtodo == 1) {
+            if ($todohash{$msgno}) {
+                $msglist{ $file }{ 'todo' } = "$msgno";
+            }
+        }
+    }
+    closedir $subdir;
+    closedir $infosubdir;
+    closedir $localsubdir;
+    closedir $remotesubdir;
+}
 
 
 # In case of deletion actions, stop qmail
