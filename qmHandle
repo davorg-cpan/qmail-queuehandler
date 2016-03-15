@@ -389,45 +389,51 @@ sub send_msgs {
 }
 
 sub show_msg_info {
-    my (%ret, %date, %from, %subj, %to, %cc, %fsize);
-    my $msg = shift;
+    my $msg_id = shift;
+    my %msg;
 
-    open (my $info_fh, '<', "${queue}info/$msg");
-    $ret{$msg} = <$info_fh>;
-    substr($ret{$msg}, 0, 1) = '';
-    chomp $ret{$msg};
+    open (my $info_fh, '<', "${queue}info/$msg_id");
+    $msg{ret} = <$info_fh>;
+    substr($msg{ret}, 0, 1) = '';
+    chomp $msg{ret};
     close ($info_fh);
-    my ($dirno, $rmsg) = split(/\//, $msg);
-    print "$rmsg ($dirno, $msg)\n";
+    my ($dirno, $rmsg) = split(/\//, $msg_id);
+    print "$rmsg ($dirno, $msg_id)\n";
  
     # Get message (file) size
-    $fsize{$msg} = (stat("${queue}mess/$msg"))[7];
-    
+    $msg{fsize} = (stat("${queue}mess/$msg_id"))[7];
+
+    my %header = (
+        Date    => 'date',
+        From    => 'from',
+        Subject => 'subject',
+        To      => 'to',
+        Cc      => 'cc',
+    );
+
     # Read something from message header (sender, receiver, subject, date)
-    open (my $msg_fh, '<', "${queue}mess/$msg");
+    open (my $msg_fh, '<', "${queue}mess/$msg_id");
     while (<$msg_fh>) {
         chomp;
-        if (/^Date: (.*)/) {
-            $date{$msg} = $1;
-        } elsif (/^From: (.*)/) {
-            $from{$msg} = $1;
-        } elsif (/^Subject: (.*)/) {
-            $subj{$msg} = $1;
-        } elsif (/^To: (.*)/) {
-            $to{$msg} = $1;
-        } elsif (/^Cc: (.*)/) {
-            $cc{$msg} = $1;
+        foreach my $h (keys %header) {
+            if (/^$h: (.*)/) {
+                $msg{$header{$h}} = $1;
+                last;
+            }
         }
     }
     close($msg_fh);
 
-    defined($ret{$msg})   and print "  ${cmsg}Return-path${cend}: $ret{$msg}\n";
-    defined($from{$msg})  and print "  ${cmsg}From${cend}: $from{$msg}\n";
-    defined($to{$msg})    and print "  ${cmsg}To${cend}: $to{$msg}\n";
-    defined($cc{$msg})    and print "  ${cmsg}Cc${cend}: $cc{$msg}\n";
-    defined($subj{$msg})  and print "  ${cmsg}Subject${cend}: $subj{$msg}\n";
-    defined($date{$msg})  and print "  ${cmsg}Date${cend}: $date{$msg}\n";
-    defined($fsize{$msg}) and print "  ${cmsg}Size${cend}: $fsize{$msg} bytes\n\n";
+    # Add "pseudo-headers" for output
+    $header{'Return-path'} = 'ret';
+    $header{Size}          = 'fsize';
+
+    for (qw[Return-path From To Cc Subject Date Size]) {
+        next unless exists $msg{$header{$_}};
+
+        print "  ${cmsg}$_${cend}: $msg{$header{$_}}\n";
+    }
+
     return;
 }
 
