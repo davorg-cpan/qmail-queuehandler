@@ -102,16 +102,16 @@ my (%msglist) = ();
 my (%todohash) = ();
 my (%bouncehash) = ();
 my ($dirno, $msgno);
-    opendir(DIR,"${queue}mess");
-    my (@dirlist) = grep !/\./, readdir DIR;
-    closedir DIR;
-    opendir(DIR,"${queue}todo");
-    my (@todolist) = grep !/\./, readdir DIR;
-    closedir DIR;
+    opendir(my $messdir,"${queue}mess");
+    my (@dirlist) = grep !/\./, readdir $messdir;
+    closedir $messdir;
+    opendir(my $tododir,"${queue}todo");
+    my (@todolist) = grep !/\./, readdir $tododir;
+    closedir $tododir;
     if ($bigtodo == 0) {
 	foreach my $tododir (@todolist) {
-	   opendir (SUBDIR,"${queue}todo/$tododir");
-	   my (@todofiles) = grep !/\./, map "$tododir/$_", readdir SUBDIR;
+	   opendir (my $subdir,"${queue}todo/$tododir");
+	   my (@todofiles) = grep !/\./, map "$tododir/$_", readdir $subdir;
 	   foreach my $todofile (@todofiles) {
 	      $msglist{ $todofile }{ 'todo' } = $todofile;
 	   }
@@ -121,21 +121,21 @@ my ($dirno, $msgno);
 	   $todohash{$todofile} = $todofile;
 	}
     }
-    opendir(DIR,"${queue}bounce");
-    my (@bouncelist) = grep !/\./, readdir DIR;
-    closedir DIR;	
+    opendir(my $bouncedir,"${queue}bounce");
+    my (@bouncelist) = grep !/\./, readdir $bouncedir;
+    closedir $bouncedir;
     foreach my $bouncefile (@bouncelist) {
 	$bouncehash{$bouncefile} = 'B';
     }
     foreach my $dir (@dirlist) {
-	opendir (SUBDIR,"${queue}mess/$dir");
-	my (@files) = grep !/\./, map "$dir/$_", readdir SUBDIR;
-	opendir (INFOSUBDIR,"${queue}info/$dir");
-	my (@infofiles) = grep !/\./, map "$dir/$_", readdir INFOSUBDIR;
-	opendir (LOCALSUBDIR,"${queue}local/$dir");
-	my (@localfiles) = grep !/\./, map "$dir/$_", readdir LOCALSUBDIR;
-	opendir (REMOTESUBDIR,"${queue}remote/$dir");
-	my (@remotefiles) = grep !/\./, map "$dir/$_", readdir REMOTESUBDIR;
+	opendir (my $subdir,"${queue}mess/$dir");
+	my (@files) = grep !/\./, map "$dir/$_", readdir $subdir;
+	opendir (my $infosubdir,"${queue}info/$dir");
+	my (@infofiles) = grep !/\./, map "$dir/$_", readdir $infosubdir;
+	opendir (my $localsubdir,"${queue}local/$dir");
+	my (@localfiles) = grep !/\./, map "$dir/$_", readdir $localsubdir;
+	opendir (my $remotesubdir,"${queue}remote/$dir");
+	my (@remotefiles) = grep !/\./, map "$dir/$_", readdir $remotesubdir;
 	foreach my $infofile (@infofiles) {
 	   $msglist{$infofile}{'sender'} = 'S';
 	}
@@ -246,8 +246,9 @@ sub startQmail {
 sub getSubject {
     my $msg = shift;
     my $msgsub;
-    open (MSG, "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
-    while (<MSG>) {
+    open (my $msg_fh, '<', "${queue}mess/$msg")
+        or die("cannot open message $msg! Is qmail-send running?\n");
+    while (<$msg_fh>) {
 	if ( $_ =~ /^Subject: /) {
 	    $msgsub = $';
 	    chop ($msgsub);
@@ -255,18 +256,19 @@ sub getSubject {
 	    last;
 	}
     }
-    close (MSG);
+    close ($msg_fh);
     return $msgsub;
 }
 
 sub getSender {
    my $msg = shift;
    my $sender;
-   open (MSG, "${queue}/info/$msg") or die("cannot open info file ${queue}/info/$msg! Is qmail-send running?\n");
-   $sender = <MSG>;
+   open (my $msg_fh, '<', "${queue}/info/$msg")
+       or die("cannot open info file ${queue}/info/$msg! Is qmail-send running?\n");
+   $sender = <$msg_fh>;
    substr($sender, 0, 1) = '';
    chop ($sender);
-   close (MSG);
+   close ($msg_fh);
    return $sender;
 }
 
@@ -294,11 +296,11 @@ sub showMessageInfo {
     my (%ret, %date, %from, %subj, %to, %cc, %fsize);
 my $msg = shift;
 #	     Read return path
-	    open (MSG, "${queue}info/$msg");
-	    $ret{$msg} = <MSG>;
+	    open ($msg_fh, '<', "${queue}info/$msg");
+	    $ret{$msg} = <$msg_fh>;
 	    substr($ret{$msg}, 0, 1) = '';
 	    chop ($ret{$msg});
-	    close (MSG);
+	    close ($msg_fh);
 	    my ($dirno, $rmsg) = split(/\//, $msg);
 	    print "$rmsg ($dirno, $msg)\n";
  
@@ -306,8 +308,8 @@ my $msg = shift;
 	    $fsize{$msg} = (stat("${queue}mess/$msg"))[7];
 	    
 	    # Read something from message header (sender, receiver, subject, date)
-	    open (MSG, "${queue}mess/$msg");
-	    while (<MSG>) {
+	    open ($msg_fh, '<', "${queue}mess/$msg");
+	    while (<$msg_fh>) {
 		if ($_ =~ /^Date: /) {
 		    $date{$msg} = $';
 		    chop ($date{$msg});
@@ -327,7 +329,7 @@ my $msg = shift;
 		    last;
 		}
 	    }
-	    close(MSG);
+	    close($msg_fh);
 
             defined($ret{$msg})   and print "  ${cmsg}Return-path${cend}: $ret{$msg}\n";
             defined($from{$msg})  and print "  ${cmsg}From${cend}: $from{$msg}\n";
@@ -396,11 +398,11 @@ sub ViewMsg {
 	    if ($msg =~ /\/$rmsg$/) {
 		$ok = 1;
 		print "\n --------------\nMESSAGE NUMBER $rmsg \n --------------\n"; 
-		open (MSG, "${queue}mess/$msg");
-		while (<MSG>) {
+		open (my $msg_fh, '<', "${queue}mess/$msg");
+		while (<$msg_fh>) {
 		    print $_;
 		}
-		close (MSG);
+		close ($msg_fh);
 		last;
 	    }
 	}
@@ -588,8 +590,8 @@ sub DelMsgHeaderR {
 
     my ($ok) = 0;
     for my $msg (keys %msglist) {
-    open (MSG, "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
-    while (<MSG>) {
+    open (my $msg_fh, ',', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
+    while (<$msg_fh>) {
 	if ($case eq 'C') {
             if ($_ =~ /$re/) {
 	       $ok = 1;
@@ -614,7 +616,7 @@ sub DelMsgHeaderR {
             }
 	}
     }
-    close (MSG);
+    close ($msg_fh);
 
     }
 # If no messages are found, print a notice
@@ -642,8 +644,8 @@ sub DelMsgBodyR {
 
     my ($ok) = 0;
     for my $msg (keys %msglist) {
-    open (MSG, "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
-    while (<MSG>) {
+    open ($msh_fh, '<', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
+    while (<$msg_fh>) {
 	if ($nomoreheaders == 1) {
 	    if ($case eq 'C') {
                 if ($_ =~ /$re/) {
@@ -671,7 +673,7 @@ sub DelMsgBodyR {
 	    }
 	}
     }
-    close (MSG);
+    close ($msg_fh);
     $nomoreheaders = 0;
 
     }
@@ -767,10 +769,10 @@ sub FlagRemote {
     my ($ok) = 0;
     for my $msg (keys %msglist) {
 	if ($msglist{$msg}{'remote'}) {
-    	    open (MSG, "${queue}remote/$msg") or die("cannot open remote file for message $msg! Is qmail-send running?\n");
-    	    $recipients = <MSG>;
+    	    open ($msg_fh, '<', "${queue}remote/$msg") or die("cannot open remote file for message $msg! Is qmail-send running?\n");
+    	    $recipients = <$msg_fh>;
 	    chop($recipients);
-    	    close (MSG);
+    	    close ($msg_fh);
 	    if ($recipients =~ $re) {
 		$ok = 1;
 		push @toflag, $msg;
