@@ -254,7 +254,7 @@ sub getSubject {
     open (my $msg_fh, '<', "${queue}mess/$msg")
         or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
-        if ( $_ =~ /^Subject: (.*)/) {
+        if ( /^Subject: (.*)/) {
             $msgsub = $1;
             chop ($msgsub);
         } elsif ( $_ eq "\n") {
@@ -316,19 +316,19 @@ sub showMessageInfo {
     # Read something from message header (sender, receiver, subject, date)
     open (my $msg_fh, '<', "${queue}mess/$msg");
     while (<$msg_fh>) {
-        if ($_ =~ /^Date: (.*)/) {
+        if (/^Date: (.*)/) {
             $date{$msg} = $1;
             chop ($date{$msg});
-        } elsif ( $_ =~ /^From: (.*)/) {
+        } elsif (/^From: (.*)/) {
             $from{$msg} = $1;
             chop ($from{$msg});
-        } elsif ( $_ =~ /^Subject: (.*)/) {
+        } elsif (/^Subject: (.*)/) {
             $subj{$msg} = $1;
             chop ($subj{$msg});
-        } elsif ( $_ =~ /^To: (.*)/) {
+        } elsif (/^To: (.*)/) {
             $to{$msg} = $1;
             chop ($to{$msg});
-        } elsif ( $_ =~ /^Cc: (.*)/) {
+        } elsif (/^Cc: (.*)/) {
             $cc{$msg} = $1;
             chop ($cc{$msg});
         } elsif ( $_ eq "\n") {
@@ -600,7 +600,7 @@ sub DelMsgHeaderR {
     open (my $msg_fh, ',', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
         if ($case eq 'C') {
-            if ($_ =~ /$re/) {
+            if (/$re/) {
                 $ok = 1;
                 $dmes = 1;
                 ($dirno, $msgno) = split(/\//, $msg);
@@ -611,7 +611,7 @@ sub DelMsgHeaderR {
                 last;
             }
         } else {
-            if ($_ =~ /$re/i) {
+            if (/$re/i) {
                 $ok = 1;
                 $dmes = 1;
                 ($dirno, $msgno) = split(/\//, $msg);
@@ -656,7 +656,7 @@ sub DelMsgBodyR {
     while (<$msg_fh>) {
         if ($nomoreheaders == 1) {
             if ($case eq 'C') {
-                if ($_ =~ /$re/) {
+                if (/$re/) {
                     $ok = 1;
                     $dmes = 1;
                     ($dirno, $msgno) = split(/\//, $msg);
@@ -665,7 +665,7 @@ sub DelMsgBodyR {
                     last;
                 }
             } else {
-                if ($_ =~ /$re/i) {
+                if (/$re/i) {
                     $ok = 1;
                     $dmes = 1;
                     ($dirno, $msgno) = split(/\//, $msg);
