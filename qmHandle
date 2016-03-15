@@ -345,7 +345,7 @@ sub get_subject {
     while (<$msg_fh>) {
         if ( /^Subject: (.*)/) {
             $msgsub = $1;
-            chop ($msgsub);
+            chomp $msgsub;
         } elsif ( $_ eq "\n") {
             last;
         }
@@ -362,7 +362,7 @@ sub get_sender {
                "Is qmail-send running?\n");
     my $sender = <$msg_fh>;
     substr($sender, 0, 1) = '';
-    chop ($sender);
+    chomp $sender;
     close ($msg_fh);
     return $sender;
 }
@@ -394,7 +394,7 @@ sub show_msg_info {
     open (my $info_fh, '<', "${queue}info/$msg");
     $ret{$msg} = <$info_fh>;
     substr($ret{$msg}, 0, 1) = '';
-    chop ($ret{$msg});
+    chomp $ret{$msg};
     close ($info_fh);
     my ($dirno, $rmsg) = split(/\//, $msg);
     print "$rmsg ($dirno, $msg)\n";
@@ -408,19 +408,14 @@ sub show_msg_info {
         chomp;
         if (/^Date: (.*)/) {
             $date{$msg} = $1;
-            chomp ($date{$msg});
         } elsif (/^From: (.*)/) {
             $from{$msg} = $1;
-            chomp ($from{$msg});
         } elsif (/^Subject: (.*)/) {
             $subj{$msg} = $1;
-            chomp ($subj{$msg});
         } elsif (/^To: (.*)/) {
             $to{$msg} = $1;
-            chomp ($to{$msg});
         } elsif (/^Cc: (.*)/) {
             $cc{$msg} = $1;
-            chomp ($cc{$msg});
         }
     }
     close($msg_fh);
@@ -797,7 +792,7 @@ sub flag_remote {
                 or die("cannot open remote file for message $msg! ",
                        "Is qmail-send running?\n");
             my $recipients = <$msg_fh>;
-            chop($recipients);
+            chomp($recipients);
             close ($msg_fh);
             if ($recipients =~ /$re/) {
                 $ok = 1;
