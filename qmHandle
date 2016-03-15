@@ -76,7 +76,7 @@ my %msglist = ();
 my %todohash = ();
 my %bouncehash = ();
 
-analyse_msgs();
+analyse_msgs($queue);
 
 # In case of deletion actions, stop qmail
 if ($dactions) {
@@ -98,6 +98,8 @@ if ($dactions) {
 # ##### SERVICE FUNCTIONS #####
 
 sub analyse_msgs {
+    my ($queue) = @_;
+
     opendir(my $messdir,"${queue}mess");
     my (@dirlist) = grep { !/\./ } readdir $messdir;
     closedir $messdir;
@@ -106,7 +108,11 @@ sub analyse_msgs {
     my (@todolist) = grep { !/\./ } readdir $tododir;
     closedir $tododir;
 
-    if ($bigtodo == 0) {
+    if ($bigtodo) {
+        foreach my $todofile (@todolist) {
+            $todohash{$todofile} = $todofile;
+        }
+    } else {
         foreach my $tododir (@todolist) {
             opendir (my $subdir,"${queue}todo/$tododir");
             my (@todofiles) = grep { !/\./ }
@@ -114,10 +120,6 @@ sub analyse_msgs {
             foreach my $todofile (@todofiles) {
                 $msglist{ $todofile }{ 'todo' } = $todofile;
             }
-        }
-    } else {
-        foreach my $todofile (@todolist) {
-            $todohash{$todofile} = $todofile;
         }
     }
 
