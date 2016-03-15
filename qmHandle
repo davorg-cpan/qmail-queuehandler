@@ -234,40 +234,40 @@ sub parse_args {
                 last SWITCH;
             };
             $arg =~ /^-S(.+)/ and do {
-                push @$actions, [\&del_msg_subj, $1];
+                push @actions, [\&del_msg_subj, $1];
                 $dactions++;
                 last SWITCH;
             };
             $arg =~ /^-h(.+)/ and do {
-                push @$actions, [\&del_msg_header_r, 'I', $1];
+                push @actions, [\&del_msg_header_r, 'I', $1];
                 $dactions++;
                 last SWITCH;
             };
             $arg =~ /^-b(.+)/ and do {
-                push @$actions, [\&del_msg_body_r, 'I', $1];
+                push @actions, [\&del_msg_body_r, 'I', $1];
                 $dactions++;
                 last SWITCH;
             };
             $arg =~ /^-H(.+)/ and do {
-                push @$actions, [\&del_msg_header_r, 'C', $1];
+                push @actions, [\&del_msg_header_r, 'C', $1];
                 $dactions++;
                 last SWITCH;
                 };
             $arg =~ /^-B(.+)/ and do {
-                push @$actions, [\&del_msg_body_r, 'C', $1];
+                push @actions, [\&del_msg_body_r, 'C', $1];
                 $dactions++;
                 last SWITCH;
             };
             $arg =~ /^-t(.+)/ and do {
-                push @$actions, [\&flag_remote, $1];
+                push @actions, [\&flag_remote, $1];
                 last SWITCH;
             };
             $arg eq '-D' and do {
-                push @$actions, [\&del_all];
+                push @actions, [\&del_all];
                 $dactions++;
                 last SWITCH; };
             $arg eq '-V' and do {
-                push @$actions, [\&version];
+                push @actions, [\&version];
                 last SWITCH;
                 };
             usage();
@@ -390,7 +390,7 @@ sub send_msgs {
 sub show_msg_info {
     my (%ret, %date, %from, %subj, %to, %cc, %fsize);
     my $msg = shift;
-# Read return path
+
     open (my $info_fh, '<', "${queue}info/$msg");
     $ret{$msg} = <$info_fh>;
     substr($ret{$msg}, 0, 1) = '';
