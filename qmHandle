@@ -16,8 +16,8 @@ my $version = '1.3.2';
 
 #####
 # Set this to your qmail queue directory (be sure to include the final slash!)
-my ($queue) = '/var/qmail/queue/';
-my ($bigtodo) = (-d "${queue}todo/0") ? 0 : 1; # 1 means no big-todo
+my $queue = '/var/qmail/queue/';
+my $bigtodo = (-d "${queue}todo/0") ? 0 : 1; # 1 means no big-todo
 
 #####
 # If your system has got automated command to start/stop qmail, then
@@ -25,23 +25,23 @@ my ($bigtodo) = (-d "${queue}todo/0") ? 0 : 1; # 1 means no big-todo
 # ### Be sure to uncomment only ONE of each variable declarations ###
 
 # For instance, this is if you have DJB's daemontools
-#my ($stopqmail) = '/usr/local/bin/svc -d /service/qmail-deliver';
-#my ($startqmail) = '/usr/local/bin/svc -u /service/qmail-deliver';
+#my $stopqmail = '/usr/local/bin/svc -d /service/qmail-deliver';
+#my $startqmail = '/usr/local/bin/svc -u /service/qmail-deliver';
 
 # While this is if you have a Debian GNU/Linux with its qmail package
-#my ($stopqmail) = '/etc/init.d/qmail stop';
-#my ($startqmail) = '/etc/init.d/qmail start';
+#my $stopqmail = '/etc/init.d/qmail stop';
+#my $startqmail = '/etc/init.d/qmail start';
 
 # If you don't have scripts, leave $stopqmail blank (the process will
 # be hunted and killed by qmHandle):
-#my ($stopqmail) = '';
+#my $stopqmail = '';
 
 # However, you still need to launch qmail in a way or the other. So,
 # if you have a standard qmail 1.03 use this:
-#my ($startqmail) = "csh -cf '/var/qmail/rc &'";
+#my $startqmail = "csh -cf '/var/qmail/rc &'";
 
 # While, if you have a standard qmail < 1.03 you should use this:
-#my ($startqmail) = '/var/qmail/bin/qmail-start ./Mailbox splogger qmail &';
+#my $startqmail = '/var/qmail/bin/qmail-start ./Mailbox splogger qmail &';
 
 my $startqmail = 'service qmail start';
 my $stopqmail  = 'service qmail stop';
@@ -49,7 +49,7 @@ my $stopqmail  = 'service qmail stop';
 #####
 # Enter here the system command which returns qmail PID. The following
 # should work on most Unixes:
-my ($pidcmd) = 'pidof qmail-send';
+my $pidcmd = 'pidof qmail-send';
 
 ####################  USER CONFIGURATION END  ####################
 
@@ -91,15 +91,15 @@ foreach my $arg (@ARGV) {
 }
 
 # Set "global" variables
-my ($norestart) = 0;
-my (@todel) = ();
-my (@toflag) = ();
-my ($dmes) = 0;
+my $norestart = 0;
+my @todel = ();
+my @toflag = ();
+my $dmes = 0;
 
 # Create a hash of messages in queue and the type of recipients they have and whether they are bouncing.
-my (%msglist) = ();
-my (%todohash) = ();
-my (%bouncehash) = ();
+my %msglist = ();
+my %todohash = ();
+my %bouncehash = ();
 my ($dirno, $msgno);
     opendir(my $messdir,"${queue}mess");
     my (@dirlist) = grep { !/\./ } readdir $messdir;
@@ -187,7 +187,7 @@ if ($dactions) {
 
 # Stop qmail
 sub stopQmail {
-    my ($qmpid) = qmailPid();
+    my $qmpid = qmailPid();
 
     # If qmail is running, we stop it
     if ($qmpid != 0) {
@@ -226,7 +226,7 @@ sub stopQmail {
 
 # Start qmail
 sub startQmail {
-    my ($qmpid) = qmailPid();
+    my $qmpid = qmailPid();
 
     # If qmail is running, why restart it?
     if ($qmpid != 0) {
@@ -282,7 +282,7 @@ sub getSender {
 # Tries to send all queued messages now 
 # This is achieved by sending an ALRM signal to qmail-send
 sub SendMsgs {
-    my ($qmpid) = qmailPid();
+    my $qmpid = qmailPid();
 
     # If qmail is running, we force sending of messages
     if ($qmpid != 0) {
@@ -350,7 +350,7 @@ sub showMessageInfo {
 # pass parameter of queue NOT to list! i.e. if you want remote only, pass L
 # if you want local, pass R  if you want all pass anything else eg A
 sub ListMsg {
-    my ($q) = shift;
+    my $q = shift;
     
 #   if ($summary == 0) {
 #       for my $msg(keys %msglist) {
@@ -387,7 +387,7 @@ sub ListMsg {
 
 # View a message in the queue
 sub ViewMsg {
-    my ($rmsg) = shift;
+    my $rmsg = shift;
     
     unless ($rmsg =~ /^\d+$/) {
 
@@ -396,7 +396,7 @@ sub ViewMsg {
     } else {
 
         # Search message
-        my ($ok) = 0;
+        my $ok = 0;
         for my $msg(keys %msglist) {
             if ($msg =~ /\/$rmsg$/) {
                 $ok = 1;
@@ -478,7 +478,7 @@ sub FlagMsgs {
 
 # Delete a message in the queue
 sub DelMsg {
-    my ($rmsg) = shift;
+    my $rmsg = shift;
     
     unless ($rmsg =~ /^\d+$/) {
 
@@ -487,7 +487,7 @@ sub DelMsg {
     } else {
 
         # Search message
-        my ($ok) = 0;
+        my $ok = 0;
         for my $msg(keys %msglist) {
             if ($msg =~ /\/$rmsg$/) {
                 $ok = 1;
@@ -522,7 +522,7 @@ sub DelMsgFromSender {
 
     print "Looking for messages from $badsender\n";
 
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'sender'}) {
             $sender = getSender($msg);
@@ -558,7 +558,7 @@ sub DelMsgFromSenderR {
 
     print "Looking for messages from senders matching $badsender\n";
 
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'sender'}) {
            $sender = getSender($msg);
@@ -594,7 +594,7 @@ sub DelMsgHeaderR {
 
     print "Looking for messages with headers matching $re\n";
 
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
     open (my $msg_fh, ',', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
@@ -649,7 +649,7 @@ sub DelMsgBodyR {
 
     print "Looking for messages with body matching $re\n";
 
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
     open (my $msg_fh, '<', "${queue}mess/$msg") or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
@@ -708,7 +708,7 @@ sub DelMsgSubj {
     print "Looking for messages with Subject: $subject\n";
 
     # Search messages
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
         ($dirno, $msgno) = split(/\//, $msg);
         $msgsub = getSubject($msg);
@@ -742,7 +742,7 @@ sub DelMsgSubj {
 sub DelAll {
 
     # Search messages
-    my ($ok) = 0;
+    my $ok = 0;
     my ($dirno, $msgno);
     for my $msg (keys %msglist) {
         $ok = 1;
@@ -775,7 +775,7 @@ sub FlagRemote {
 
     print "Looking for messages with recipients in $re\n";
 
-    my ($ok) = 0;
+    my $ok = 0;
     for my $msg (keys %msglist) {
         if ($msglist{$msg}{'remote'}) {
             open (my $msg_fh, '<', "${queue}remote/$msg") or die("cannot open remote file for message $msg! Is qmail-send running?\n");
@@ -800,11 +800,11 @@ sub FlagRemote {
 
 # Make statistics
 sub Stats {
-    my ($total) = 0;
-    my ($l) = 0;
-    my ($r) = 0;
-    my ($b) = 0;
-    my ($t) = 0;
+    my $total = 0;
+    my $l = 0;
+    my $r = 0;
+    my $b = 0;
+    my $t = 0;
 
     foreach my $msg(keys %msglist) {
         $total++;
