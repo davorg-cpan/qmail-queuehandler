@@ -163,25 +163,25 @@ sub analyse_msgs {
                             map  { "$dir/$_" } readdir $remotesubdir;
 
         foreach my $infofile (@infofiles) {
-            $msglist{$infofile}{'sender'} = 'S';
+            $msglist{$infofile}{sender} = 'S';
         }
 
         foreach my $localfile (@localfiles) {
-            $msglist{$localfile}{'local'} = 'L';
+            $msglist{$localfile}{local} = 'L';
         }
 
         foreach my $remotefile (@remotefiles) {
-            $msglist{$remotefile}{'remote'} = 'R';
+            $msglist{$remotefile}{remote} = 'R';
         }
 
         foreach my $file (@files) {
             my ($dirno, $msgno) = split(/\//, $file);
             if ($bouncehash{$msgno}) {
-                $msglist{ $file }{ 'bounce' } = 'B';
+                $msglist{ $file }{bounce} = 'B';
             }
             if ($bigtodo == 1) {
                 if ($todohash{$msgno}) {
-                    $msglist{ $file }{ 'todo' } = "$msgno";
+                    $msglist{ $file }{todo} = "$msgno";
                 }
             }
         }
@@ -455,20 +455,20 @@ sub list_msg {
     for my $msg (keys %$msglist) {
         if (!$summary) {
             if ($q eq 'L') {
-                if ($msglist->{$msg}{'local'}) {
+                if ($msglist->{$msg}{local}) {
                     show_msg_info($msg);
                 }
             }
             if ($q eq 'R') {
-                if ($msglist->{$msg}{'remote'}) {
+                if ($msglist->{$msg}{remote}) {
                     show_msg_info($msg);
                 }
             }
             if ($q eq 'A') {
-                if ($msglist->{$msg}{'local'}) {
+                if ($msglist->{$msg}{local}) {
                     show_msg_info($msg);
                 }
-                if ($msglist->{$msg}{'remote'}) {
+                if ($msglist->{$msg}{remote}) {
                     show_msg_info($msg);
                 }
             }
@@ -520,18 +520,18 @@ sub trash_msgs {
         $grouped++;
         $deleted++;
         my ($dirno, $msgno) = split(/\//, $msg);
-        if ($msglist->{$msg}{'bounce'}) {
+        if ($msglist->{$msg}{bounce}) {
             push @todelete, "${queue}bounce/$msgno";
         }
         push @todelete, "${queue}mess/$msg";
         push @todelete, "${queue}info/$msg";
-        if ($msglist->{$msg}{'remote'}) {
+        if ($msglist->{$msg}{remote}) {
             push @todelete, "${queue}remote/$msg";
         }
-        if ($msglist->{$msg}{'local'}) {
+        if ($msglist->{$msg}{local}) {
             push @todelete, "${queue}local/$msg";
         }
-        if ($msglist->{$msg}{'todo'}) {
+        if ($msglist->{$msg}{todo}) {
             push @todelete, "${queue}todo/$msglist->{$msg}{'todo'}";
             push @todelete, "${queue}intd/$msglist->{$msg}{'todo'}";
         }
@@ -603,7 +603,7 @@ sub del_msg_from_sender {
 
     my $ok = 0;
     for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{'sender'}) {
+        if ($msglist->{$msg}{sender}) {
             my $sender = get_sender($msg);
             if ($sender eq $badsender) {
                 $ok = 1;
@@ -629,7 +629,7 @@ sub del_msg_from_sender_r {
 
     my $ok = 0;
     for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{'sender'}) {
+        if ($msglist->{$msg}{sender}) {
            my $sender = get_sender($msg);
            if ($sender =~ /$badsender/) {
                $ok = 1;
@@ -803,7 +803,7 @@ sub flag_remote {
 
     my $ok = 0;
     for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{'remote'}) {
+        if ($msglist->{$msg}{remote}) {
             open (my $msg_fh, '<', "${queue}remote/$msg")
                 or die("cannot open remote file for message $msg! ",
                        "Is qmail-send running?\n");
@@ -839,10 +839,10 @@ sub stats {
 
     foreach my $msg (keys %$msglist) {
         $total++;
-        if ($msglist->{$msg}{'local'}  ) { $l++; }
-        if ($msglist->{$msg}{'remote'} ) { $r++; }
-        if ($msglist->{$msg}{'bounce'} ) { $b++; }
-        if ($msglist->{$msg}{'todo'} ) { $t++; }
+        if ($msglist->{$msg}{local}  ) { $l++; }
+        if ($msglist->{$msg}{remote} ) { $r++; }
+        if ($msglist->{$msg}{bounce} ) { $b++; }
+        if ($msglist->{$msg}{todo} ) { $t++; }
     }
 
    print <<"END_OF_STATS";
