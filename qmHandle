@@ -657,7 +657,7 @@ sub del_msg_header_r {
 
     my $ok = 0;
     for my $msg (keys %$msglist) {
-    open (my $msg_fh, ',', "${queue}mess/$msg")
+    open (my $msg_fh, '<', "${queue}mess/$msg")
         or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
         if ($case eq 'C') {
