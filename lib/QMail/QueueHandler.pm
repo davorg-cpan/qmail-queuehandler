@@ -1,6 +1,6 @@
-#!/usr/bin/perl
-#
-# qmHandle
+package Qmail::QueueHandler;
+
+# Qmail::QueueHander
 #
 # Copyright (c) 2016 Dave Cross <dave@perlhacks.com>
 # Based on original version by Michele Beltrame <mb@italpro.net>
@@ -8,8 +8,7 @@
 # This program is distributed under the GNU GPL.
 # For more information have a look at http://www.gnu.org
 
-use strict;
-use warnings;
+use Moose;
 
 use Term::ANSIColor;
 use Getopt::Std;
@@ -22,8 +21,19 @@ my $me = basename $0;
 
 #####
 # Set this to your qmail queue directory (be sure to include the final slash!)
-my $queue = '/var/qmail/queue/';
 my $bigtodo = (-d "${queue}todo/0") ? 0 : 1; # 1 means no big-todo
+
+has queue => (
+  is => 'ro',
+  isa => 'Str',
+  default => '/var/qmail/queue/',
+);
+
+has bigtodo => (
+  is => 'ro',
+  isa => 'Bool',
+  default => sub { -d $_->[0]->queue . 'todo/0' },
+);
 
 #####
 # If your system has got automated command to start/stop qmail, then
@@ -49,13 +59,41 @@ my $bigtodo = (-d "${queue}todo/0") ? 0 : 1; # 1 means no big-todo
 # While, if you have a standard qmail < 1.03 you should use this:
 #my $startqmail = '/var/qmail/bin/qmail-start ./Mailbox splogger qmail &';
 
-my $startqmail = 'service qmail start';
-my $stopqmail  = 'service qmail stop';
+has commands => (
+  is => 'ro',
+  isa => HashRef,
+  default => sub { {
+    start => 'service qmail start',
+    stop  => 'service qmail stop',
+    pid   => 'pidof qmail-send',
+  } },
+);
 
-#####
-# Enter here the system command which returns qmail PID. The following
-# should work on most Unixes:
-my $pidcmd = 'pidof qmail-send';
+has colours => (
+  is => 'ro',
+  isa => 'HashRef',
+  default => sub { {
+    msg => '',
+    stat => '',
+    end => '',
+  } },
+);
+
+has summary => (
+  is => 'ro',
+  isa => 'Bool',
+);
+
+has deletions => (
+  is => 'ro',
+  isa => 'Bool',
+);
+
+has action => (
+  is => 'ro',
+  isa => 'ArrayRef',
+  default => sub { [] },
+);
 
 ####################  USER CONFIGURATION END  ####################
 
@@ -71,16 +109,12 @@ my @colours = (
     color('reset'),
 );
 
-my $summary = 0;
-my $dactions = 0;
-
 my $actions = parse_args(@ARGV);
 
 # Set "global" variables
 my $restart;
 my @todel = ();
 my @toflag = ();
-my $dmes = 0;
 
 # Create a hash of messages in queue and the type of recipients they have
 # and whether they are bouncing.
@@ -581,7 +615,6 @@ sub del_msg {
     for my $msg(keys %$msglist) {
         if ($msg =~ /\/$rmsg$/) {
             $ok = 1;
-            $dmes = 1;
             push @todel, $msg;
             warn "Deleting message $rmsg...\n";
             last;
@@ -607,7 +640,6 @@ sub del_msg_from_sender {
             my $sender = get_sender($msg);
             if ($sender eq $badsender) {
                 $ok = 1;
-                $dmes = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 print "Message $msgno slotted for deletion\n";
                 push @todel, $msg;
@@ -633,7 +665,6 @@ sub del_msg_from_sender_r {
            my $sender = get_sender($msg);
            if ($sender =~ /$badsender/) {
                $ok = 1;
-               $dmes = 1;
                my ($dirno, $msgno) = split(/\//, $msg);
                print "Message $msgno slotted for deletion\n";
                push @todel, $msg;
@@ -663,7 +694,6 @@ sub del_msg_header_r {
         if ($case eq 'C') {
             if (/$re/) {
                 $ok = 1;
-                $dmes = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
                 push @todel, $msg;
@@ -674,7 +704,6 @@ sub del_msg_header_r {
         } else {
             if (/$re/i) {
                 $ok = 1;
-                $dmes = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
                 push @todel, $msg;
@@ -711,7 +740,6 @@ sub del_msg_body_r {
             if ($case eq 'C') {
                 if (/$re/) {
                     $ok = 1;
-                    $dmes = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
                     warn "Message $msgno slotted for deletion.\n";
                     push @todel, $msg;
@@ -720,7 +748,6 @@ sub del_msg_body_r {
             } else {
                 if (/$re/i) {
                     $ok = 1;
-                    $dmes = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
                     warn "Message $msgno slotted for deletion.\n";
                     push @todel, $msg;
@@ -759,7 +786,6 @@ sub del_msg_subj {
 
         if ($msgsub and $msgsub =~ /$subject/) {
             $ok = 1;
-            $dmes = 1;
             warn "Deleting message: $msgno\n";
             push @todel, $msg;
         }
@@ -782,7 +808,6 @@ sub del_all {
     my $ok = 0;
     for my $msg (keys %$msglist) {
         $ok = 1;
-        $dmes = 1;
         my ($dirno, $msgno) = split(/\//, $msg);
         warn "Message $msgno slotted for deletion!\n";
         push @todel, $msg;
