@@ -880,7 +880,7 @@ Available parameters:
   -mN      : display message number N
   -dN      : delete message number N
   -fsender : delete message from sender
-  -f're'   : delete message from senders matching regular expression re
+  -F're'   : delete message from senders matching regular expression re
   -Stext   : delete all messages that have/contain text as Subject
   -h're'   : delete all messages with headers matching regular expression re (case insensitive)
   -b're'   : delete all messages with body matching regular expression re (case insensitive)
