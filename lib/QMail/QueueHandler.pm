@@ -17,16 +17,14 @@ use File::Basename;
 my $version = '2.0.0 [alpha]';
 my $me = basename $0;
 
-#################### USER CONFIGURATION BEGIN ####################
-
-#####
-
+# Where qmail stores all of its files
 has queue => (
   is => 'ro',
   isa => 'Str',
   default => '/var/qmail/queue/',
 );
 
+# Which todo format do we have?
 has bigtodo => (
   is => 'ro',
   isa => 'Bool',
@@ -34,30 +32,7 @@ has bigtodo => (
   default => sub { -d $_[0]->queue . 'todo/0' },
 );
 
-#####
-# If your system has got automated command to start/stop qmail, then
-# enter them here.
-# ### Be sure to uncomment only ONE of each variable declarations ###
-
-# For instance, this is if you have DJB's daemontools
-#my $stopqmail = '/usr/local/bin/svc -d /service/qmail-deliver';
-#my $startqmail = '/usr/local/bin/svc -u /service/qmail-deliver';
-
-# While this is if you have a Debian GNU/Linux with its qmail package
-#my $stopqmail = '/etc/init.d/qmail stop';
-#my $startqmail = '/etc/init.d/qmail start';
-
-# If you don't have scripts, leave $stopqmail blank (the process will
-# be hunted and killed by qmHandle):
-#my $stopqmail = '';
-
-# However, you still need to launch qmail in a way or the other. So,
-# if you have a standard qmail 1.03 use this:
-#my $startqmail = "csh -cf '/var/qmail/rc &'";
-
-# While, if you have a standard qmail < 1.03 you should use this:
-#my $startqmail = '/var/qmail/bin/qmail-start ./Mailbox splogger qmail &';
-
+# Various commands that we use
 has commands => (
   is => 'ro',
   isa => 'HashRef',
@@ -68,6 +43,8 @@ has commands => (
   } },
 );
 
+# Colours for output.
+# Default is non-coloured. These values can ve changed in parse_args.
 has colours => (
   is => 'ro',
   isa => 'HashRef',
@@ -78,41 +55,51 @@ has colours => (
   } },
 );
 
+# Are we showing a summary?
 has summary => (
   is => 'ro',
   isa => 'Bool',
   default => 0,
 );
 
+# Are we supposed to be deleting things?
 has deletions => (
   is => 'ro',
   isa => 'Bool',
 );
 
+# What actions are we carrying out.
+# Each element in this array is another array.
+# The first element in these second level arrays is a code ref.
+# The other elements are arguments to be passed to the code ref.
 has actions => (
   is => 'ro',
   isa => 'ArrayRef',
   default => sub { [] },
 );
 
+# Do we need to restart QMail once we have finished?
 has restart => (
   is => 'ro',
   isa => 'Bool',
   default => 0,
 );
 
+# List of messages to delete
 has to_delete => (
   is => 'rw',
   isa => 'ArrayRef',
   default => sub { [] },
 );
 
+# List of messages to flag
 has to_flag => (
   is => 'rw',
   isa => 'ArrayRef',
   default => sub { [] },
 );
 
+# Hash containing details of the messages in the queue
 has msglist => (
   is => 'rw',
   isa => 'HashRef',
@@ -437,7 +424,7 @@ sub start_qmail {
     # In any other case, we restart it
     warn "Restarting qmail... \n";
     system($self->commands->{startqmail});
-    warn "done (hopefully).\n";
+    warn "Done (hopefully).\n";
 
     return 1;
 }
