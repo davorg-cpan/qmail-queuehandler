@@ -61,7 +61,7 @@ has bigtodo => (
 
 has commands => (
   is => 'ro',
-  isa => HashRef,
+  isa => 'HashRef',
   default => sub { {
     start => 'service qmail start',
     stop  => 'service qmail stop',
@@ -89,64 +89,76 @@ has deletions => (
   isa => 'Bool',
 );
 
-has action => (
+has actions => (
   is => 'ro',
+  isa => 'ArrayRef',
+  default => sub { [] },
+);
+
+has restart => (
+  is => 'ro',
+  isa => 'Bool',
+  default => 0,
+);
+
+has to_delete => (
+  is => 'rw',
+  isa => 'ArrayRef',
+  default => sub { [] },
+);
+
+has to_flag => (
+  is => 'rw',
+  isa => 'ArrayRef',
+  default => sub { [] },
+);
+
+has msglist => (
+  is => 'rw',
   isa => 'ArrayRef',
   default => sub { [] },
 );
 
 ####################  USER CONFIGURATION END  ####################
 
-# Print usage if no arguments
-@ARGV or usage();
+sub run {
+    my $self = shift;
+    my @args = @_;
 
-# Get command line options
+    # Get command line options
+    $self->parse_args(@args);
 
-my ($cmsg, $cstat, $cend) = ('', '', '');
-my @colours = (
-    color('bold bright_blue'),
-    color('bold bright_red'),
-    color('reset'),
-);
+    $self->analyse_msgs;
 
-my $actions = parse_args(@ARGV);
+    # If we want to delete stuff, then stop qmail.
+    if ($self->deletions) {
+        $self->stop_qmail;
+    }
 
-# Set "global" variables
-my $restart;
-my @todel = ();
-my @toflag = ();
+    # Execute actions
+    foreach my $action (@{ $self->actions }) {
+        my $sub = shift @$action; # First element is the sub
+        $sub->(@$action);         # Others the arguments, if any
+    }
 
-# Create a hash of messages in queue and the type of recipients they have
-# and whether they are bouncing.
+    # If we have planned deletions, then do them.
+    if (@{ $self->to_delete }) {
+        trash_msgs();
+    }
 
-my $msglist = analyse_msgs($queue);
-
-# If we want to delete stuff, then stop qmail.
-if ($dactions) {
-    $restart = stop_qmail();
+    # If we stopped qmail, then restart it
+    $self->start_qmail();
 }
-
-# Execute actions    
-foreach my $action (@$actions) {
-   my $sub = shift @$action; # First element is the sub
-   $sub->(@$action);         # Others the arguments, if any
-}
-
-# If we have planned deletions, then do them.
-if ($dactions) {
-    trash_msgs();
-}
-
-# If we stopped qmail, then restart it
-$restart and start_qmail();
-
 
 # ##### SERVICE FUNCTIONS #####
 
 sub analyse_msgs {
-    my ($queue) = @_;
+    my $self = shift;
+    
+    my $queue = $self->queue;
 
-    my (%msglist, %todohash, %bouncehash);
+    my (%todohash, %bouncehash);
+    my $msglist = $self->msglist;
 
     opendir(my $messdir,"${queue}mess");
     my (@dirlist) = grep { !/\./ } readdir $messdir;
@@ -166,7 +178,7 @@ sub analyse_msgs {
             my (@todofiles) = grep { !/\./ }
                               map  { "$tododir/$_" } readdir $subdir;
             foreach my $todofile (@todofiles) {
-                $msglist{ $todofile }{ 'todo' } = $todofile;
+                $msglist->{ $todofile }{ 'todo' } = $todofile;
             }
         }
     }
@@ -197,25 +209,25 @@ sub analyse_msgs {
                             map  { "$dir/$_" } readdir $remotesubdir;
 
         foreach my $infofile (@infofiles) {
-            $msglist{$infofile}{sender} = 'S';
+            $msglist->{$infofile}{sender} = 'S';
         }
 
         foreach my $localfile (@localfiles) {
-            $msglist{$localfile}{local} = 'L';
+            $msglist->{$localfile}{local} = 'L';
         }
 
         foreach my $remotefile (@remotefiles) {
-            $msglist{$remotefile}{remote} = 'R';
+            $msglist->{$remotefile}{remote} = 'R';
         }
 
         foreach my $file (@files) {
             my ($dirno, $msgno) = split(/\//, $file);
             if ($bouncehash{$msgno}) {
-                $msglist{ $file }{bounce} = 'B';
+                $msglist->{ $file }{bounce} = 'B';
             }
             if ($bigtodo == 1) {
                 if ($todohash{$msgno}) {
-                    $msglist{ $file }{todo} = "$msgno";
+                    $msglist->{ $file }{todo} = "$msgno";
                 }
             }
         }
@@ -226,12 +238,14 @@ sub analyse_msgs {
         closedir $remotesubdir;
     }
 
-    return \%msglist;
+    return;
 }
 
 sub parse_args {
+    my $self = shift;
+
     my @args = @_;
-    my @actions;
+    my $actions = $self->actions;
     my %opt;
 
     getopts('alLRNcsm:f:F:d:S:h:b:H:B:t:DV', \%opt);
@@ -239,110 +253,116 @@ sub parse_args {
     foreach my $opt (keys %opt) {
         SWITCH: {
             $opt eq 'a' and do {
-                push @actions, [\&send_msgs];
+                push @$actions, [\&send_msgs];
                 last SWITCH;
             };
             $opt eq 'l' and do {
-                push @actions, [\&list_msg, 'A'];
+                push @$actions, [\&list_msg, 'A'];
                 last SWITCH;
             };
             $opt eq 'L' and do {
-                push @actions, [\&list_msg, 'L'];
+                push @$actions, [\&list_msg, 'L'];
                 last SWITCH;
             };
             $opt eq 'R' and do {
-                push @actions, [\&list_msg, 'R'];
+                push @$actions, [\&list_msg, 'R'];
                 last SWITCH;
             };
             $opt eq 'N' and do {
-                $summary = 1;
+                $self->summary(1);
                 last SWITCH;
             };
             $opt eq 'c' and do {
-                ($cmsg, $cstat, $cend) = @colours;
+                @{ $self->colours }{qw[msg stat end]} = (
+                    color('bold bright_blue'),
+                    color('bold bright_red'),
+                    color('reset'),
+                );
                 last SWITCH;
             };
             $opt eq 's' and do {
-                push @actions, [\&stats];
+                push @$actions, [\&stats];
                 last SWITCH;
             };
             $opt eq 'm' and do {
-                push @actions, [\&view_msg, $opt{$opt}];
+                push @$actions, [\&view_msg, $opt{$opt}];
                 last SWITCH;
             };
             $opt eq 'f' and do {
-                push @actions, [\&del_msg_from_sender, $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_from_sender, $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'F' and do {
-                push @actions, [\&del_msg_from_sender_r, $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_from_sender_r, $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'd' and do {
-                push @actions, [\&del_msg, $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg, $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'S' and do {
-                push @actions, [\&del_msg_subj, $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_subj, $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'h' and do {
-                push @actions, [\&del_msg_header_r, 'I', $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_header_r, 'I', $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'b' and do {
-                push @actions, [\&del_msg_body_r, 'I', $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_body_r, 'I', $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'H' and do {
-                push @actions, [\&del_msg_header_r, 'C', $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_header_r, 'C', $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
                 };
             $opt eq 'B' and do {
-                push @actions, [\&del_msg_body_r, 'C', $opt{$opt}];
-                $dactions++;
+                push @$actions, [\&del_msg_body_r, 'C', $opt{$opt}];
+                $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 't' and do {
-                push @actions, [\&flag_remote, $opt{$opt}];
+                push @$actions, [\&flag_remote, $opt{$opt}];
                 last SWITCH;
             };
             $opt eq '-D' and do {
-                push @actions, [\&del_all];
-                $dactions++;
-                last SWITCH; };
+                push @$actions, [\&del_all];
+                $self->deletions(1);
+                last SWITCH;
+            };
             $opt eq '-V' and do {
-                push @actions, [\&version];
+                push @$actions, [\&version];
                 last SWITCH;
                 };
             usage();
         }
     }
 
-    return \@actions;
+    return;
 }
 
 # Stop qmail
 sub stop_qmail {
+    my $self = shift;
 
     # If qmail is running, we stop it
-    if (my $qmpid = qmail_pid()) {
+    if (my $qmpid = $self->qmail_pid) {
 
         # If there is a system script available, we use it
-        if ($stopqmail ne '') {
+        if ($self->commands->{stopqmail} ne '') {
 
             warn "Calling system script to terminate qmail...\n";
-            if (system($stopqmail) > 0) {
+            if (system($self->commands->{stopqmail}) > 0) {
                 die 'Could not stop qmail';
             }
-            sleep 1 while qmail_pid();
+            sleep 1 while $self->qmail_pid;
 
         # Otherwise, we're killers!
         } else {
@@ -350,31 +370,39 @@ sub stop_qmail {
                  "this might take a while if qmail is working.\n";
             kill 'TERM', $qmpid;
     
-            sleep 1 while qmail_pid();
+            sleep 1 while $self->qmail_pid;
         }
 
     # If it isn't, we don't. We also return a false value so our caller
     # knows they might not want to restart it later.
     } else {
         warn "Qmail isn't running... no need to stop it.\n";
-        return 0;
+        return;
     }
+
+    $self->restart(1);
 
     return 1;
 }
 
 # Start qmail
 sub start_qmail {
+    my $self = shift;
+
+    unless ($self->restart) {
+        warn "Not restarting Qmail as it wasn't running originally\n";
+        return;
+    }
 
     # If qmail is running, why restart it?
-    if (my $qmpid = qmail_pid()) {
+    if (my $qmpid = $self->qmail_pid) {
         warn "Qmail is already running again, so it won't be restarted.\n";
         return 1;
     }
 
     # In any other case, we restart it
-    warn "Restarting qmail... ";
-    system($startqmail);
+    warn "Restarting qmail... \n";
+    system($self->commands->{startqmail});
     warn "done (hopefully).\n";
 
     return 1;
@@ -382,8 +410,11 @@ sub start_qmail {
 
 # Returns the subject of a message
 sub get_subject {
-    my $msg = shift;
+    my $self = shift;
+    my ($msg) = @_;
+
     my $msgsub;
+    my $queue = $self->queue;
     open (my $msg_fh, '<', "${queue}mess/$msg")
         or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
@@ -399,7 +430,10 @@ sub get_subject {
 }
 
 sub get_sender {
-    my $msg = shift;
+    my $self = shift;
+    my ($msg) = @_;
+
+    my $queue = $self->queue;
 
     open (my $msg_fh, '<', "${queue}/info/$msg")
         or die("cannot open info file ${queue}/info/$msg! ",
@@ -432,8 +466,11 @@ sub send_msgs {
 }
 
 sub show_msg_info {
-    my $msg_id = shift;
+    my $self = shift;
+    my ($msg_id) = @_;
+
     my %msg;
+    my $queue = $self->queue;
 
     open (my $info_fh, '<', "${queue}info/$msg_id");
     $msg{ret} = <$info_fh>;
@@ -471,6 +508,9 @@ sub show_msg_info {
     $header{'Return-path'} = 'ret';
     $header{Size}          = 'fsize';
 
+    my $colours = $self->colours;
+    my ($cmsg, $cend) = @{$colours}{qw[msg end]};
+
     for (qw[Return-path From To Cc Subject Date Size]) {
         next unless exists $msg{$header{$_}};
 
@@ -484,10 +524,12 @@ sub show_msg_info {
 # pass parameter of queue NOT to list! i.e. if you want remote only, pass L
 # if you want local, pass R  if you want all pass anything else eg A
 sub list_msg {
-    my $q = shift;
-    
+    my $self = shift;
+    my ($q) = @_;
+
+    my $msglist = $self->msglist;
     for my $msg (keys %$msglist) {
-        if (!$summary) {
+        if (!$self->summary) {
             if ($q eq 'L') {
                 if ($msglist->{$msg}{local}) {
                     show_msg_info($msg);
@@ -516,7 +558,8 @@ sub list_msg {
 # View a message in the queue
 #
 sub view_msg {
-    my $rmsg = shift;
+    my $self = shift;
+    my ($rmsg) = @_;
     
     if ($rmsg =~ /\D/) {
         warn "$rmsg is not a valid message number!\n";
@@ -525,7 +568,8 @@ sub view_msg {
 
     # Search message
     my $ok = 0;
-    for my $msg(keys %$msglist) {
+    my $queue = $self->queue;
+    for my $msg(keys %{$self->msglist}) {
         if ($msg =~ /\/$rmsg$/) {
             $ok = 1;
             print "\n --------------\nMESSAGE NUMBER $rmsg \n --------------\n"; 
@@ -547,10 +591,14 @@ sub view_msg {
 }
 
 sub trash_msgs {
+    my $self = shift;
+
+    my $queue = $self->queue;
+    my $msglist = $self->msglist;
     my @todelete = ();
     my $grouped = 0;
     my $deleted = 0;
-    foreach my $msg (@todel) {
+    foreach my $msg (@{$self->to_delete}) {
         $grouped++;
         $deleted++;
         my ($dirno, $msgno) = split(/\//, $msg);
@@ -583,10 +631,13 @@ sub trash_msgs {
 }
 
 sub flag_msgs {
+    my $self = shift;
+
+    my $queue = $self->queue;
     my $now = time;
     my @flagqueue = ();
     my $flagged = 0;
-    foreach my $msg (@toflag) {
+    foreach my $msg (@{$self->to_flag}) {
         push @flagqueue, "${queue}info/$msg";
         $flagged++;
         if ($flagged == 30) {
@@ -603,7 +654,8 @@ sub flag_msgs {
 
 # Delete a message in the queue
 sub del_msg {
-    my $rmsg = shift;
+    my $self = shift;
+    my ($rmsg) = @_;
     
     if ($rmsg =~ /\D/) {
         warn "$rmsg is not a valid message number!\n";
@@ -612,10 +664,10 @@ sub del_msg {
 
     # Search message
     my $ok = 0;
-    for my $msg(keys %$msglist) {
+    for my $msg(keys %{$self->msglist}) {
         if ($msg =~ /\/$rmsg$/) {
             $ok = 1;
-            push @todel, $msg;
+            push @{$self->to_delete}, $msg;
             warn "Deleting message $rmsg...\n";
             last;
         }
@@ -630,19 +682,20 @@ sub del_msg {
 }
 
 sub del_msg_from_sender {
-    my $badsender = shift;
+    my $self = shift;
+    my ($badsender) = @_;
 
     warn "Looking for messages from $badsender\n";
 
     my $ok = 0;
-    for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{sender}) {
+    for my $msg (keys %{$self->msglist}) {
+        if ($self->msglist->{$msg}{sender}) {
             my $sender = get_sender($msg);
             if ($sender eq $badsender) {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 print "Message $msgno slotted for deletion\n";
-                push @todel, $msg;
+                push @{$self->to_delete}, $msg;
             }
         }
     }
@@ -655,19 +708,20 @@ sub del_msg_from_sender {
 }
 
 sub del_msg_from_sender_r {
-    my $badsender = shift;
+    my $self = shift;
+    my ($badsender) = @_;
 
     warn "Looking for messages from senders matching $badsender\n";
 
     my $ok = 0;
-    for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{sender}) {
+    for my $msg (keys %{$self->msglist}) {
+        if ($self->msglist->{$msg}{sender}) {
            my $sender = get_sender($msg);
            if ($sender =~ /$badsender/) {
                $ok = 1;
                my ($dirno, $msgno) = split(/\//, $msg);
                print "Message $msgno slotted for deletion\n";
-               push @todel, $msg;
+               push @{$self->to_delete}, $msg;
            }
         }
     }
@@ -681,13 +735,14 @@ sub del_msg_from_sender_r {
 }
 
 sub del_msg_header_r {
-    my $case = shift;
-    my $re = shift;
+    my $self = shift;
+    my ($case, $re) = @_;
 
     warn "Looking for messages with headers matching $re\n";
 
+    my $queue = $self->queue;
     my $ok = 0;
-    for my $msg (keys %$msglist) {
+    for my $msg (keys %{$self->msglist}) {
     open (my $msg_fh, '<', "${queue}mess/$msg")
         or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
@@ -696,7 +751,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
-                push @todel, $msg;
+                push @{$self->to_delete}, $msg;
                 last;
             } elsif ( $_ eq "\n") {
                 last;
@@ -706,7 +761,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
-                push @todel, $msg;
+                push @{$self->to_delete}, $msg;
                 last;
             } elsif ( $_ eq "\n") {
                 last;
@@ -725,14 +780,16 @@ sub del_msg_header_r {
 }
 
 sub del_msg_body_r {
-    my $case = shift;
-    my $re = shift;
+    my $self = shift;
+    my ($case, $re) = @_;
+
     my $nomoreheaders = 0;
+    my $queue = $self->queue;
 
     warn "Looking for messages with body matching $re\n";
 
     my $ok = 0;
-    for my $msg (keys %$msglist) {
+    for my $msg (keys %{$self->msglist}) {
     open (my $msg_fh, '<', "${queue}mess/$msg")
         or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
@@ -742,7 +799,7 @@ sub del_msg_body_r {
                     $ok = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
                     warn "Message $msgno slotted for deletion.\n";
-                    push @todel, $msg;
+                    push @{$self->to_delete}, $msg;
                     last;
                 }
             } else {
@@ -750,7 +807,7 @@ sub del_msg_body_r {
                     $ok = 1;
                     my ($dirno, $msgno) = split(/\//, $msg);
                     warn "Message $msgno slotted for deletion.\n";
-                    push @todel, $msg;
+                    push @{$self->to_delete}, $msg;
                     last;
                 }
             }
@@ -774,20 +831,21 @@ sub del_msg_body_r {
 }
 
 sub del_msg_subj {
-    my $subject = shift;
+    my $self = shift;
+    my ($subject) = @_;
 
     warn "Looking for messages with Subject: $subject\n";
 
     # Search messages
     my $ok = 0;
-    for my $msg (keys %$msglist) {
+    for my $msg (keys %{$self->msglist}) {
         my ($dirno, $msgno) = split(/\//, $msg);
         my $msgsub = get_subject($msg);
 
         if ($msgsub and $msgsub =~ /$subject/) {
             $ok = 1;
             warn "Deleting message: $msgno\n";
-            push @todel, $msg;
+            push @{$self->to_delete}, $msg;
         }
 
     }
@@ -803,14 +861,15 @@ sub del_msg_subj {
 
 # Delete all messages in the queue (thanks Kasper Holtze)
 sub del_all {
+    my $self = shift;
 
     # Search messages
     my $ok = 0;
-    for my $msg (keys %$msglist) {
+    for my $msg (keys %{$self->msglist}) {
         $ok = 1;
         my ($dirno, $msgno) = split(/\//, $msg);
         warn "Message $msgno slotted for deletion!\n";
-        push @todel, $msg;
+        push @{$self->to_delete}, $msg;
     }
 
     # If no messages are found, print a notice
@@ -822,13 +881,16 @@ sub del_all {
 }
 
 sub flag_remote {
-    my $re = shift;
+    my $self = shift;
+    my ($re) = @_;
+
+    my $queue = $self->queue;
 
     warn "Looking for messages with recipients in $re\n";
 
     my $ok = 0;
-    for my $msg (keys %$msglist) {
-        if ($msglist->{$msg}{remote}) {
+    for my $msg (keys %{$self->msglist}) {
+        if ($self->msglist->{$msg}{remote}) {
             open (my $msg_fh, '<', "${queue}remote/$msg")
                 or die("cannot open remote file for message $msg! ",
                        "Is qmail-send running?\n");
@@ -837,7 +899,7 @@ sub flag_remote {
             close ($msg_fh);
             if ($recipients =~ /$re/) {
                 $ok = 1;
-                push @toflag, $msg;
+                push @{$self->to_flag}, $msg;
                 warn "Message $msg being tagged for earlier retry ",
                      "(and lengthened stay in queue)!\n"
             }
@@ -856,19 +918,24 @@ sub flag_remote {
 
 # Make statistics
 sub stats {
+    my $self = shift;
+
     my $total = 0;
     my $l = 0;
     my $r = 0;
     my $b = 0;
     my $t = 0;
 
-    foreach my $msg (keys %$msglist) {
+    foreach my $msg (keys %{$self->msglist}) {
         $total++;
-        if ($msglist->{$msg}{local}  ) { $l++; }
-        if ($msglist->{$msg}{remote} ) { $r++; }
-        if ($msglist->{$msg}{bounce} ) { $b++; }
-        if ($msglist->{$msg}{todo} ) { $t++; }
+        if ($self->msglist->{$msg}{local}  ) { $l++; }
+        if ($self->msglist->{$msg}{remote} ) { $r++; }
+        if ($self->msglist->{$msg}{bounce} ) { $b++; }
+        if ($self->msglist->{$msg}{todo}   ) { $t++; }
     }
+
+    my $colours = $self->colours;
+    my ($cstat, $cend) = @{$colours}{qw[stat end]};
 
    print <<"END_OF_STATS";
 ${cstat}Total messages${cend}: $total
@@ -882,11 +949,13 @@ END_OF_STATS
 
 # Retrieve pid of qmail-send
 sub qmail_pid {
+    my $self = shift;
+    my $pidcmd = $self->commands->{pidcmd};
     my $qmpid = `$pidcmd`;
     chomp ($qmpid);
     $qmpid =~ s/\s+//g;
-    if ($qmpid =~ /^\d+$/) { return $qmpid; }
-    return 0;
+    return 0 if $qmpid =~ /\D/;
+    return $qmpid;
 }
 
 # Print help
