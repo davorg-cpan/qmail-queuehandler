@@ -142,7 +142,7 @@ sub run {
     # Execute actions
     foreach my $action (@{ $self->actions }) {
         my $sub = shift @$action; # First element is the sub
-        $self->$sub->(@$action);  # Others the arguments, if any
+        $self->$sub(@$action);  # Others the arguments, if any
     }
 
     # If we have planned deletions, then do them.
