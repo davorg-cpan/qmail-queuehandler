@@ -113,8 +113,6 @@ sub BUILD {
 
     # Get command line options
     $self->parse_args;
-
-    $self->analyse_msgs;
 }
 
 sub run {
