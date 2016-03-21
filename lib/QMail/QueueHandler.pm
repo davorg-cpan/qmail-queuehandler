@@ -103,7 +103,7 @@ has to_flag => (
 has msglist => (
   is => 'rw',
   isa => 'HashRef',
-  default => sub { {} },
+  lazy_build => 1,
 );
 
 ####################  USER CONFIGURATION END  ####################
@@ -143,7 +143,7 @@ sub run {
 
 # ##### SERVICE FUNCTIONS #####
 
-sub analyse_msgs {
+sub _build_msglist {
     my $self = shift;
     
     my $queue = $self->queue;
