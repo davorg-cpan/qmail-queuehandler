@@ -147,7 +147,7 @@ sub _build_msglist {
     my $queue = $self->queue;
 
     my (%todohash, %bouncehash);
-    my $msglist = $self->msglist;
+    my $msglist = {};
 
     opendir(my $messdir,"${queue}mess");
     my (@dirlist) = grep { !/\./ } readdir $messdir;
@@ -227,7 +227,7 @@ sub _build_msglist {
         closedir $remotesubdir;
     }
 
-    return;
+    return $msglist;
 }
 
 sub parse_args {
