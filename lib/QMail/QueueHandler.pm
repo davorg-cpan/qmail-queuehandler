@@ -408,10 +408,7 @@ sub stop_qmail {
 sub start_qmail {
     my $self = shift;
 
-    unless ($self->restart) {
-        warn "Not restarting Qmail as it wasn't running originally\n";
-        return;
-    }
+    return unless $self->restart;
 
     # If qmail is running, why restart it?
     if (my $qmpid = $self->qmail_pid) {
