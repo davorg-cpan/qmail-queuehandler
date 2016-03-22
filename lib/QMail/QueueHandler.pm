@@ -132,7 +132,7 @@ sub run {
 
     # If we have planned deletions, then do them.
     if (@{ $self->to_delete }) {
-        trash_msgs();
+        $self->trash_msgs();
     }
 
     # If we stopped qmail, then restart it
