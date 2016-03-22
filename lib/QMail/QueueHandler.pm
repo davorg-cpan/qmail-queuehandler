@@ -64,7 +64,7 @@ has summary => (
 
 # Are we supposed to be deleting things?
 has deletions => (
-  is => 'ro',
+  is => 'rw',
   isa => 'Bool',
 );
 
