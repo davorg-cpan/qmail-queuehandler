@@ -150,73 +150,62 @@ sub _build_msglist {
     my $msglist = {};
 
     opendir(my $tododir,"${queue}todo");
-    my @todolist = grep { !/\./ } readdir $tododir;
-    closedir $tododir;
-
     if ($self->bigtodo) {
-        foreach my $todofile (@todolist) {
+        foreach my $todofile (grep { !/\./ } readdir $tododir) {
             $todohash{$todofile} = $todofile;
         }
     } else {
-        foreach my $tododir (@todolist) {
+        foreach my $tododir (grep { !/\./ } readdir $tododir) {
             opendir (my $subdir,"${queue}todo/$tododir");
-            my (@todofiles) = grep { !/\./ }
-                              map  { "$tododir/$_" } readdir $subdir;
-            foreach my $todofile (@todofiles) {
+            foreach my $todofile (grep { !/\./ }
+                                  map  { "$tododir/$_" } readdir $subdir) {
                 $msglist->{ $todofile }{ 'todo' } = $todofile;
             }
         }
     }
+    closedir $tododir;
 
     opendir(my $bouncedir,"${queue}bounce");
-    my @bouncelist = grep { !/\./ } readdir $bouncedir;
-    closedir $bouncedir;
-
-    foreach my $bouncefile (@bouncelist) {
+    foreach my $bouncefile (grep { !/\./ } readdir $bouncedir) {
         $bouncehash{$bouncefile} = 'B';
     }
+    closedir $bouncedir;
+
 
     opendir(my $messdir,"${queue}mess");
-    my @dirlist = grep { !/\./ } readdir $messdir;
-    closedir $messdir;
-
-    foreach my $dir (@dirlist) {
+    foreach my $dir (grep { !/\./ } readdir $messdir) {
 
         opendir (my $infosubdir,"${queue}info/$dir");
-        my @infofiles = grep { !/\./ }
-                        map  { "$dir/$_" } readdir $infosubdir;
 
-        foreach my $infofile (@infofiles) {
+        foreach my $infofile (grep { !/\./ }
+                              map  { "$dir/$_" } readdir $infosubdir) {
             $msglist->{$infofile}{sender} = 'S';
         }
 
         close $infosubdir;
 
         opendir (my $localsubdir,"${queue}local/$dir");
-        my @localfiles = grep { !/\./ }
-                         map  { "$dir/$_" } readdir $localsubdir;
 
-        foreach my $localfile (@localfiles) {
+        foreach my $localfile (grep { !/\./ }
+                               map  { "$dir/$_" } readdir $localsubdir) {
             $msglist->{$localfile}{local} = 'L';
         }
 
         close $localsubdir;
 
         opendir (my $remotesubdir,"${queue}remote/$dir");
-        my @remotefiles = grep { !/\./ }
-                          map  { "$dir/$_" } readdir $remotesubdir;
 
-        foreach my $remotefile (@remotefiles) {
+        foreach my $remotefile (grep { !/\./ }
+                                map  { "$dir/$_" } readdir $remotesubdir) {
             $msglist->{$remotefile}{remote} = 'R';
         }
 
         close $remotesubdir;
 
         opendir (my $subdir,"${queue}mess/$dir");
-        my @files = grep { !/\./ }
-                    map  { "$dir/$_" } readdir $subdir;
 
-        foreach my $file (@files) {
+        foreach my $file (grep { !/\./ }
+                          map  { "$dir/$_" } readdir $subdir) {
             my ($dirno, $msgno) = split(/\//, $file);
             if ($bouncehash{$msgno}) {
                 $msglist->{ $file }{bounce} = 'B';
@@ -230,6 +219,7 @@ sub _build_msglist {
 
         closedir $subdir;
     }
+    closedir $messdir;
 
     return $msglist;
 }
