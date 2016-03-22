@@ -938,10 +938,10 @@ sub stats {
 
     foreach my $msg (keys %{$self->msglist}) {
         $total++;
-        if ($self->msglist->{$msg}{local}  ) { $l++; }
-        if ($self->msglist->{$msg}{remote} ) { $r++; }
-        if ($self->msglist->{$msg}{bounce} ) { $b++; }
-        if ($self->msglist->{$msg}{todo}   ) { $t++; }
+        $self->msglist->{$msg}{local}  && $l++;
+        $self->msglist->{$msg}{remote} && $r++;
+        $self->msglist->{$msg}{bounce} && $b++;
+        $self->msglist->{$msg}{todo}   && $t++;
     }
 
     my $colours = $self->colours;
