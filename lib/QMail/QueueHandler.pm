@@ -894,7 +894,7 @@ sub del_all {
         $ok = 1;
         my ($dirno, $msgno) = split(/\//, $msg);
         warn "Message $msgno slotted for deletion!\n";
-        push $self->add_to_delete($msg);
+        $self->add_to_delete($msg);
     }
 
     # If no messages are found, print a notice
