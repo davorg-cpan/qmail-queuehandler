@@ -964,7 +964,7 @@ END_OF_STATS
 # Retrieve pid of qmail-send
 sub qmail_pid {
     my $self = shift;
-    my $pidcmd = $self->commands->{pidcmd};
+    my $pidcmd = $self->commands->{pid};
     my $qmpid = `$pidcmd`;
     chomp ($qmpid);
     $qmpid =~ s/\s+//g;
