@@ -693,7 +693,7 @@ sub del_msg {
     for my $msg(keys %{$self->msglist}) {
         if ($msg =~ /\/$rmsg$/) {
             $ok = 1;
-            $self->add_to_delete, $msg;
+            $self->add_to_delete($msg);
             warn "Deleting message $rmsg...\n";
             last;
         }
@@ -721,7 +721,7 @@ sub del_msg_from_sender {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 print "Message $msgno slotted for deletion\n";
-                $self->add_to_delete, $msg;
+                $self->add_to_delete($msg);
             }
         }
     }
@@ -747,7 +747,7 @@ sub del_msg_from_sender_r {
                $ok = 1;
                my ($dirno, $msgno) = split(/\//, $msg);
                print "Message $msgno slotted for deletion\n";
-               $self->add_to_delete, $msg;
+               $self->add_to_delete($msg);
            }
         }
     }
@@ -777,7 +777,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
-                $self->add_to_delete, $msg;
+                $self->add_to_delete($msg);
                 last;
             } elsif ( $_ eq "\n") {
                 last;
@@ -787,7 +787,7 @@ sub del_msg_header_r {
                 $ok = 1;
                 my ($dirno, $msgno) = split(/\//, $msg);
                 warn "Message $msgno slotted for deletion.\n";
-                $self->add_to_delete, $msg;
+                $self->add_to_delete($msg);
                 last;
             } elsif ( $_ eq "\n") {
                 last;
@@ -825,7 +825,7 @@ sub del_msg_body_r {
                         $ok = 1;
                         my ($dirno, $msgno) = split(/\//, $msg);
                         warn "Message $msgno slotted for deletion.\n";
-                        $self->add_to_delete, $msg;
+                        $self->add_to_delete($msg);
                         last;
                     }
                 } else {
@@ -833,7 +833,7 @@ sub del_msg_body_r {
                         $ok = 1;
                         my ($dirno, $msgno) = split(/\//, $msg);
                         warn "Message $msgno slotted for deletion.\n";
-                        $self->add_to_delete, $msg;
+                        $self->add_to_delete($msg);
                         last;
                     }
                 }
@@ -870,7 +870,7 @@ sub del_msg_subj {
         if ($msgsub and $msgsub =~ /$subject/) {
             $ok = 1;
             warn "Deleting message: $msgno\n";
-            $self->add_to_delete, $msg;
+            $self->add_to_delete($msg);
         }
 
     }
@@ -894,7 +894,7 @@ sub del_all {
         $ok = 1;
         my ($dirno, $msgno) = split(/\//, $msg);
         warn "Message $msgno slotted for deletion!\n";
-        push $self->add_to_delete, $msg;
+        push $self->add_to_delete($msg);
     }
 
     # If no messages are found, print a notice
@@ -924,7 +924,7 @@ sub flag_remote {
             close ($msg_fh);
             if ($recipients =~ /$re/) {
                 $ok = 1;
-                $self->add_to_flag, $msg;
+                $self->add_to_flag($msg);
                 warn "Message $msg being tagged for earlier retry ",
                      "(and lengthened stay in queue)!\n"
             }
