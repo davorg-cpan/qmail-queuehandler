@@ -410,10 +410,10 @@ sub stop_qmail {
     if ( my $qmpid = $self->qmail_pid ) {
 
         # If there is a system script available, we use it
-        if ( $self->commands->{stopqmail} ne '' ) {
+        if ( $self->commands->{stop} ne '' ) {
 
             warn "Calling system script to terminate qmail...\n";
-            if ( system( $self->commands->{stopqmail} ) > 0 ) {
+            if ( system( $self->commands->{stop} ) > 0 ) {
                 die 'Could not stop qmail';
             }
             sleep 1 while $self->qmail_pid;
@@ -455,7 +455,7 @@ sub start_qmail {
 
     # In any other case, we restart it
     warn "Restarting qmail... \n";
-    system( $self->commands->{startqmail} );
+    system( $self->commands->{start} );
     warn "Done (hopefully).\n";
 
     return 1;
