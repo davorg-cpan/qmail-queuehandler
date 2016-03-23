@@ -146,10 +146,8 @@ sub run {
     my $self = shift;
     my @args = @_;
 
-    # If we want to delete stuff, then stop qmail.
-    if ( $self->deletions ) {
-        $self->stop_qmail;
-    }
+    # (Possibly) stop qmail
+    $self->stop_qmail;
 
     # Execute actions
     foreach my $action ( $self->all_actions ) {
@@ -404,6 +402,9 @@ sub parse_args {
 # Stop qmail
 sub stop_qmail {
     my $self = shift;
+
+    # Don't need to stop qmail if we're not planning to delete stuff
+    return unless $self->deletions;
 
     # If qmail is running, we stop it
     if ( my $qmpid = $self->qmail_pid ) {
