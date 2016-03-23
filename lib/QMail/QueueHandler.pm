@@ -157,11 +157,11 @@ sub run {
 
     # If we have planned deletions, then do them.
     if ( $self->to_delete_count ) {
-        $self->trash_msgs();
+        $self->trash_msgs;
     }
 
     # If we stopped qmail, then restart it
-    $self->start_qmail();
+    $self->start_qmail;
 }
 
 # ##### SERVICE FUNCTIONS #####
@@ -267,7 +267,7 @@ sub _build_msglist {
 sub parse_args {
     my $self = shift;
 
-    @ARGV or usage();
+    @ARGV or $self->usage;
 
     my %opt;
 
@@ -606,7 +606,7 @@ sub list_msg {
         } ## end if ($summary == 0)
     } ## end foreach my $msg (@msglist)
 
-    $self->stats();
+    $self->stats;
     return;
 }
 
@@ -964,7 +964,7 @@ sub flag_remote {
         return;
     }
 
-    flag_msgs();
+    $self->flag_msgs;
 
     return;
 }
