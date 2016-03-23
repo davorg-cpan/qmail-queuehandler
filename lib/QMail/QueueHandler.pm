@@ -74,8 +74,13 @@ has deletions => (
 # The other elements are arguments to be passed to the code ref.
 has actions => (
   is => 'ro',
+  traits => ['Array'],
   isa => 'ArrayRef',
   default => sub { [] },
+  handles => {
+      add_action => 'push',
+      all_actions => 'elements',
+  },
 );
 
 # Do we need to restart QMail once we have finished?
@@ -125,7 +130,7 @@ sub run {
     }
 
     # Execute actions
-    foreach my $action (@{ $self->actions }) {
+    foreach my $action ($self->all_actions) {
         my $sub = shift @$action; # First element is the sub
         $self->$sub(@$action);  # Others the arguments, if any
     }
@@ -229,7 +234,6 @@ sub parse_args {
 
     @ARGV or usage();
 
-    my $actions = $self->actions;
     my %opt;
 
     my %optargs = (
@@ -266,19 +270,19 @@ sub parse_args {
         }
         SWITCH: {
             $opt eq 'a' and do {
-                push @$actions, [\&send_msgs];
+                $self->add_action([\&send_msgs]);
                 last SWITCH;
             };
             $opt eq 'l' and do {
-                push @$actions, [\&list_msg, 'A'];
+                $self->add_action([\&list_msg, 'A']);
                 last SWITCH;
             };
             $opt eq 'L' and do {
-                push @$actions, [\&list_msg, 'L'];
+                $self->add_action([\&list_msg, 'L']);
                 last SWITCH;
             };
             $opt eq 'R' and do {
-                push @$actions, [\&list_msg, 'R'];
+                $self->add_action([\&list_msg, 'R']);
                 last SWITCH;
             };
             $opt eq 'N' and do {
@@ -294,64 +298,64 @@ sub parse_args {
                 last SWITCH;
             };
             $opt eq 's' and do {
-                push @$actions, [\&stats];
+                $self->add_action([\&stats]);
                 last SWITCH;
             };
             $opt eq 'm' and do {
-                push @$actions, [\&view_msg, $opt{$opt}];
+                $self->add_action([\&view_msg, $opt{$opt}]);
                 last SWITCH;
             };
             $opt eq 'f' and do {
-                push @$actions, [\&del_msg_from_sender, $opt{$opt}];
+                $self->add_action([\&del_msg_from_sender, $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'F' and do {
-                push @$actions, [\&del_msg_from_sender_r, $opt{$opt}];
+                $self->add_action([\&del_msg_from_sender_r, $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'd' and do {
-                push @$actions, [\&del_msg, $opt{$opt}];
+                $self->add_action([\&del_msg, $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'S' and do {
-                push @$actions, [\&del_msg_subj, $opt{$opt}];
+                $self->add_action([\&del_msg_subj, $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'h' and do {
-                push @$actions, [\&del_msg_header_r, 'I', $opt{$opt}];
+                $self->add_action([\&del_msg_header_r, 'I', $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'b' and do {
-                push @$actions, [\&del_msg_body_r, 'I', $opt{$opt}];
+                $self->add_action([\&del_msg_body_r, 'I', $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'H' and do {
-                push @$actions, [\&del_msg_header_r, 'C', $opt{$opt}];
+                $self->add_action([\&del_msg_header_r, 'C', $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
                 };
             $opt eq 'B' and do {
-                push @$actions, [\&del_msg_body_r, 'C', $opt{$opt}];
+                $self->add_action([\&del_msg_body_r, 'C', $opt{$opt}]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 't' and do {
-                push @$actions, [\&flag_remote, $opt{$opt}];
+                $self->add_actions([\&flag_remote, $opt{$opt}]);
                 last SWITCH;
             };
             $opt eq '-D' and do {
-                push @$actions, [\&del_all];
+                $self->add_action([\&del_all]);
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq '-V' and do {
-                push @$actions, [\&version];
+                $self->add_action([\&version]);
                 last SWITCH;
                 };
             $self->usage;
