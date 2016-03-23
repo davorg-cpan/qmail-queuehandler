@@ -111,7 +111,7 @@ before add_to_delete => sub {
     my $self = shift;
     my ($msg_id) = @_;
 
-    warn "Message [$msg_id] queued for deletion.";
+    warn "Message [$msg_id] queued for deletion.\n";
 };
 
 # List of messages to flag
