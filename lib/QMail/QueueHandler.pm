@@ -89,7 +89,7 @@ has actions => (
 
 # Do we need to restart QMail once we have finished?
 has restart => (
-    is      => 'ro',
+    is      => 'rw',
     isa     => 'Bool',
     default => 0,
 );
