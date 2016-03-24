@@ -550,6 +550,8 @@ sub show_msg_info {
     open( my $msg_fh, '<', "${queue}mess/$msg_id" );
     while (<$msg_fh>) {
         chomp;
+        # Stop processing at the end of the headers
+        last unless /\S/;
         foreach my $h ( keys %header ) {
             if (/^$h: (.*)/) {
                 $msg{ $header{$h} } = $1;
