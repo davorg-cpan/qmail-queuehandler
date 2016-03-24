@@ -272,25 +272,25 @@ sub parse_args {
     my %opt;
 
     my %optargs = (
-        a => 0,
-        l => 0,
-        L => 0,
-        R => 0,
-        N => 0,
-        c => 0,
-        s => 0,
-        m => 1,
-        f => 1,
-        F => 1,
-        d => 1,
-        S => 1,
-        h => 1,
-        b => 1,
-        H => 1,
-        B => 1,
-        t => 1,
-        D => 0,
-        V => 0,
+        a => 0, # (Attempt to) send all queued messages
+        l => 0, # List message queues
+        L => 0, # List local message queue
+        R => 0, # List remote message queue
+        N => 0, # List message numbers only
+        c => 0, # Coloured output
+        s => 0, # Show statistics of queues
+        m => 1, # Display message with given number
+        f => 1, # Delete messages from given sender
+        F => 1, # Delete messages from given sender (regex match)
+        d => 1, # Delete message with given number
+        S => 1, # Delete messages with matching subject
+        h => 1, # Delete messages with matching header (case insensitive)
+        b => 1, # Delete messages with matching body (case insensitive)
+        H => 1, # Delete messages with matching header (case sensitive)
+        B => 1, # Delete messages with matching body (case sensitive)
+        t => 1, # Flag messages with matching recipients
+        D => 0, # Delete all messages in queues
+        V => 0, # Display program version
     );
 
     my $optstring = join '', map { $_ . ( $optargs{$_} ? ':' : '' ) }
