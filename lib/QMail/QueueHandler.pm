@@ -811,7 +811,6 @@ sub del_msg_body_r {
     my $self = shift;
     my ( $case, $re ) = @_;
 
-    my $nomoreheaders = 0;
     my $queue         = $self->queue;
 
     warn "Looking for messages with body matching $re\n";
@@ -822,23 +821,20 @@ sub del_msg_body_r {
     for my $msg ( keys %{ $self->msglist } ) {
         open( my $msg_fh, '<', "${queue}mess/$msg" )
           or die("cannot open message $msg! Is qmail-send running?\n");
+        # Skip headers
         while (<$msg_fh>) {
-            if ( $nomoreheaders == 1 ) {
-                if (/$re/) {
-                    $ok = 1;
-                    my ( $dirno, $msgno ) = split( /\//, $msg );
-                    $self->add_to_delete($msg);
-                    last;
-                }
-            }
-            else {
-                if ( $_ eq "\n" ) {
-                    $nomoreheaders = 1;
-                }
+            chomp;
+            last if !/\S/;
+        }
+        while (<$msg_fh>) {
+            if (/$re/) {
+                $ok = 1;
+                my ( $dirno, $msgno ) = split( /\//, $msg );
+                $self->add_to_delete($msg);
+                last;
             }
         }
         close($msg_fh);
-        $nomoreheaders = 0;
     }
 
     # If no messages are found, print a notice
