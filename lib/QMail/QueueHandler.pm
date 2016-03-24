@@ -471,12 +471,10 @@ sub get_subject {
     open( my $msg_fh, '<', "${queue}mess/$msg" )
       or die("cannot open message $msg! Is qmail-send running?\n");
     while (<$msg_fh>) {
+        chomp;
+        last if !/\S/; # End of headers
         if (/^Subject: (.*)/) {
             $msgsub = $1;
-            chomp $msgsub;
-        }
-        elsif ( $_ eq "\n" ) {
-            last;
         }
     }
     close($msg_fh);
