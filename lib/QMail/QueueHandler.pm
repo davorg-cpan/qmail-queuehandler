@@ -578,35 +578,19 @@ sub show_msg_info {
 }
 
 # Display message list
-# pass parameter of queue NOT to list! i.e. if you want remote only, pass L
-# if you want local, pass R  if you want all pass anything else eg A
 sub list_msg {
     my $self = shift;
     my ($q) = @_;
 
     my $msglist = $self->msglist;
-    for my $msg ( keys %$msglist ) {
-        if ( !$self->summary ) {
-            if ( $q eq 'L' ) {
-                if ( $msglist->{$msg}{local} ) {
-                    $self->show_msg_info($msg);
-                }
-            }
-            if ( $q eq 'R' ) {
-                if ( $msglist->{$msg}{remote} ) {
-                    $self->show_msg_info($msg);
-                }
-            }
-            if ( $q eq 'A' ) {
-                if ( $msglist->{$msg}{local} ) {
-                    $self->show_msg_info($msg);
-                }
-                if ( $msglist->{$msg}{remote} ) {
-                    $self->show_msg_info($msg);
-                }
-            }
-        } ## end if ($summary == 0)
-    } ## end foreach my $msg (@msglist)
+    if ( !$self->summary ) {
+        for my $msg ( keys %$msglist ) {
+            next if $q eq 'L' and ! $msglist->{$msg}{local};
+            next if $q eq 'R' and ! $msglist->{$msg}{remote};
+
+            $self->show_msg_info($msg);
+        }
+    }
 
     $self->stats;
     return;
@@ -631,9 +615,7 @@ sub view_msg {
             $ok = 1;
             print "\n --------------\nMESSAGE NUMBER $rmsg \n --------------\n";
             open( my $msg_fh, '<', "${queue}mess/$msg" );
-            while (<$msg_fh>) {
-                print $_;
-            }
+            print while <$msg_fh>;
             close($msg_fh);
             last;
         }
@@ -662,8 +644,7 @@ sub trash_msgs {
         if ( $msglist->{$msg}{bounce} ) {
             push @todelete, "${queue}bounce/$msgno";
         }
-        push @todelete, "${queue}mess/$msg";
-        push @todelete, "${queue}info/$msg";
+        push @todelete, "${queue}mess/$msg", "${queue}info/$msg";
         if ( $msglist->{$msg}{remote} ) {
             push @todelete, "${queue}remote/$msg";
         }
@@ -671,8 +652,8 @@ sub trash_msgs {
             push @todelete, "${queue}local/$msg";
         }
         if ( $msglist->{$msg}{todo} ) {
-            push @todelete, "${queue}todo/$msglist->{$msg}{'todo'}";
-            push @todelete, "${queue}intd/$msglist->{$msg}{'todo'}";
+            push @todelete, "${queue}todo/$msglist->{$msg}{'todo'}",
+                            "${queue}intd/$msglist->{$msg}{'todo'}";
         }
         if ( $grouped == 11 ) {
             unlink @todelete;
@@ -683,7 +664,8 @@ sub trash_msgs {
     if ($grouped) {
         unlink @todelete;
     }
-    warn "Deleted $deleted messages from queue\n";
+    my $msg_str = $deleted == 1 ? 'message' : 'messages';
+    warn "Deleted $deleted $msg_str from queue\n";
     return;
 }
 
