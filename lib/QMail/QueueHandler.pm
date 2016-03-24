@@ -778,33 +778,21 @@ sub del_msg_header_r {
 
     warn "Looking for messages with headers matching $re\n";
 
+    $re = "(?i)$re" if $case eq 'C';
+
     my $queue = $self->queue;
     my $ok    = 0;
     for my $msg ( keys %{ $self->msglist } ) {
         open( my $msg_fh, '<', "${queue}mess/$msg" )
           or die("cannot open message $msg! Is qmail-send running?\n");
         while (<$msg_fh>) {
-            if ( $case eq 'C' ) {
-                if (/$re/) {
-                    $ok = 1;
-                    my ( $dirno, $msgno ) = split( /\//, $msg );
-                    $self->add_to_delete($msg);
-                    last;
-                }
-                elsif ( $_ eq "\n" ) {
-                    last;
-                }
-            }
-            else {
-                if (/$re/i) {
-                    $ok = 1;
-                    my ( $dirno, $msgno ) = split( /\//, $msg );
-                    $self->add_to_delete($msg);
-                    last;
-                }
-                elsif ( $_ eq "\n" ) {
-                    last;
-                }
+            chomp;
+            last if ! /\S/; # End of headers
+            if (/$re/) {
+                $ok = 1;
+                my ( $dirno, $msgno ) = split( /\//, $msg );
+                $self->add_to_delete($msg);
+                last;
             }
         }
         close($msg_fh);
@@ -828,27 +816,19 @@ sub del_msg_body_r {
 
     warn "Looking for messages with body matching $re\n";
 
+    $re = "(?i)$re" if $case eq 'C';
+
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
         open( my $msg_fh, '<', "${queue}mess/$msg" )
           or die("cannot open message $msg! Is qmail-send running?\n");
         while (<$msg_fh>) {
             if ( $nomoreheaders == 1 ) {
-                if ( $case eq 'C' ) {
-                    if (/$re/) {
-                        $ok = 1;
-                        my ( $dirno, $msgno ) = split( /\//, $msg );
-                        $self->add_to_delete($msg);
-                        last;
-                    }
-                }
-                else {
-                    if (/$re/i) {
-                        $ok = 1;
-                        my ( $dirno, $msgno ) = split( /\//, $msg );
-                        $self->add_to_delete($msg);
-                        last;
-                    }
+                if (/$re/) {
+                    $ok = 1;
+                    my ( $dirno, $msgno ) = split( /\//, $msg );
+                    $self->add_to_delete($msg);
+                    last;
                 }
             }
             else {
