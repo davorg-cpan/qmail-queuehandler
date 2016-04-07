@@ -383,12 +383,12 @@ sub parse_args {
                 $self->add_actions( [ \&flag_remote, $opt{$opt} ] );
                 last SWITCH;
             };
-            $opt eq '-D' and do {
+            $opt eq 'D' and do {
                 $self->add_action( [ \&del_all ] );
                 $self->deletions(1);
                 last SWITCH;
             };
-            $opt eq '-V' and do {
+            $opt eq 'V' and do {
                 $self->add_action( [ \&version ] );
                 last SWITCH;
             };
