@@ -776,7 +776,7 @@ sub del_msg_header_r {
 
     warn "Looking for messages with headers matching $re\n";
 
-    $re = "(?i)$re" if $case eq 'C';
+    $re = "(?i)$re" if $case eq 'I';
 
     my $queue = $self->queue;
     my $ok    = 0;
@@ -813,7 +813,7 @@ sub del_msg_body_r {
 
     warn "Looking for messages with body matching $re\n";
 
-    $re = "(?i)$re" if $case eq 'C';
+    $re = "(?i)$re" if $case eq 'I';
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
