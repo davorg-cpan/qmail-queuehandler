@@ -360,22 +360,22 @@ sub parse_args {
                 last SWITCH;
             };
             $opt eq 'h' and do {
-                $self->add_action( [ \&del_msg_header_r, 'I', $opt{$opt} ] );
+                $self->add_action( [ \&del_msg_header_r, $opt{$opt}, 1 ] );
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'b' and do {
-                $self->add_action( [ \&del_msg_body_r, 'I', $opt{$opt} ] );
+                $self->add_action( [ \&del_msg_body_r, $opt{$opt}, 1 ] );
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'H' and do {
-                $self->add_action( [ \&del_msg_header_r, 'C', $opt{$opt} ] );
+                $self->add_action( [ \&del_msg_header_r, $opt{$opt}, 0 ] );
                 $self->deletions(1);
                 last SWITCH;
             };
             $opt eq 'B' and do {
-                $self->add_action( [ \&del_msg_body_r, 'C', $opt{$opt} ] );
+                $self->add_action( [ \&del_msg_body_r, $opt{$opt}, 0 ] );
                 $self->deletions(1);
                 last SWITCH;
             };
@@ -772,11 +772,11 @@ sub del_msg_from_sender_r {
 
 sub del_msg_header_r {
     my $self = shift;
-    my ( $case, $re ) = @_;
+    my ( $re, $is_case_sensitive ) = @_;
 
     warn "Looking for messages with headers matching $re\n";
 
-    $re = "(?i)$re" if $case eq 'I';
+    $re = "(?i)$re" if $is_case_sensitive;
 
     my $queue = $self->queue;
     my $ok    = 0;
@@ -807,13 +807,13 @@ sub del_msg_header_r {
 
 sub del_msg_body_r {
     my $self = shift;
-    my ( $case, $re ) = @_;
+    my ( $re, $is_case_sensitive ) = @_;
 
     my $queue         = $self->queue;
 
     warn "Looking for messages with body matching $re\n";
 
-    $re = "(?i)$re" if $case eq 'I';
+    $re = "(?i)$re" if $is_case_sensitive;
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
