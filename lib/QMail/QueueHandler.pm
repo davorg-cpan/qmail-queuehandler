@@ -1003,8 +1003,6 @@ Additional (optional) parameters:
 You can view/delete multiple message i.e. -d123 -m456 -d567
 
 END_OF_HELP
-
-    exit;
 }
 
 # Print help
