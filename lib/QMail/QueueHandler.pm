@@ -470,6 +470,7 @@ sub get_subject {
         last if !/\S/; # End of headers
         if (/^Subject: (.*)/) {
             $msgsub = $1;
+            last;
         }
     }
     close($msg_fh);
