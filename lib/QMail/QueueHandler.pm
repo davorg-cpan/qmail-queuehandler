@@ -186,8 +186,7 @@ sub _build_msglist {
             foreach my $todofile (
                 grep { !/\./ }
                 map  { "$tododir/$_" } readdir $subdir
-              )
-            {
+              ) {
                 $msglist->{$todofile}{'todo'} = $todofile;
             }
         }
@@ -208,8 +207,7 @@ sub _build_msglist {
         foreach my $infofile (
             grep { !/\./ }
             map  { "$dir/$_" } readdir $infosubdir
-          )
-        {
+          ) {
             $msglist->{$infofile}{sender} = 'S';
         }
 
@@ -220,8 +218,7 @@ sub _build_msglist {
         foreach my $localfile (
             grep { !/\./ }
             map  { "$dir/$_" } readdir $localsubdir
-          )
-        {
+          ) {
             $msglist->{$localfile}{local} = 'L';
         }
 
@@ -232,8 +229,7 @@ sub _build_msglist {
         foreach my $remotefile (
             grep { !/\./ }
             map  { "$dir/$_" } readdir $remotesubdir
-          )
-        {
+          ) {
             $msglist->{$remotefile}{remote} = 'R';
         }
 
@@ -244,8 +240,7 @@ sub _build_msglist {
         foreach my $file (
             grep { !/\./ }
             map  { "$dir/$_" } readdir $subdir
-          )
-        {
+          ) {
             my ( $dirno, $msgno ) = split( /\//, $file );
             if ( $bouncehash{$msgno} ) {
                 $msglist->{$file}{bounce} = 'B';
