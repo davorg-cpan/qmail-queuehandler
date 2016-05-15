@@ -14,8 +14,8 @@ use Term::ANSIColor;
 use Getopt::Std;
 use File::Basename;
 
-my $version = '2.0.0 [alpha]';
-my $me      = basename $0;
+our $VERSION = '2.0.0 [alpha]';
+my $me       = basename $0;
 
 # Where qmail stores all of its files
 has queue => (
@@ -286,6 +286,7 @@ sub parse_args {
         t => 1, # Flag messages with matching recipients
         D => 0, # Delete all messages in queues
         V => 0, # Display program version
+        '?' => 0, # Display help
     );
 
     my $optstring = join '', map { $_ . ( $optargs{$_} ? ':' : '' ) }
@@ -387,7 +388,10 @@ sub parse_args {
                 $self->add_action( [ \&version ] );
                 last SWITCH;
             };
-            $self->usage;
+            $opt eq '?' and do {
+                $self->usage;
+                last SWITCH;
+            };
         }
     }
 
@@ -968,7 +972,7 @@ sub qmail_pid {
 # Print help
 sub usage {
     print <<"END_OF_HELP";
-$me v$version
+$me v$VERSION
 Copyright (c) 2016 Dave Cross <dave\@perlhacks.com>
 Based on original version by Michele Beltrame <mb\@italpro.net>
 
@@ -990,6 +994,7 @@ Available parameters:
   -t're'   : flag messages with recipients in regular expression 're' for earlier retry (note: this lengthens the time message can stay in queue)
   -D       : delete all messages in the queue (local and remote)
   -V       : print program version
+  -?       : Display this help
 
 Additional (optional) parameters:
   -c       : display colored output
@@ -1003,7 +1008,7 @@ END_OF_HELP
 
 # Print help
 sub version {
-    print "$me v$version\n";
+    print "$me v$VERSION\n";
     return;
 }
 
