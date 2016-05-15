@@ -1,10 +1,10 @@
 =head1 NAME
 
-QMail::QueueHandler
+QMail::QueueHandler - Module to manage QMail message queues
 
 =head1 DESCRIPTION
 
-Module to manage QMail message queues
+This is all the code behind the qmHandle command line program.
 
 =head1 SYNOPSIS
 
