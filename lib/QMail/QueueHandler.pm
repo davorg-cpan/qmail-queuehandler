@@ -46,7 +46,7 @@ has commands => (
 );
 
 # Colours for output.
-# Default is non-coloured. These values can ve changed in parse_args.
+# Default is non-coloured. These values can be changed in parse_args.
 has colours => (
     is      => 'ro',
     isa     => 'HashRef',
