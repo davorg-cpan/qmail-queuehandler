@@ -1,3 +1,19 @@
+=head1 NAME
+
+QMail::QueueHandler
+
+=head1 DESCRIPTION
+
+Module to manage QMail message queues
+
+=head1 SYNOPSIS
+
+    use QMail::QueueHandler;
+
+    QMail::QueueHandler->new->run;
+
+=cut
+
 package QMail::QueueHandler;
 
 # QMail::QueueHander
@@ -133,14 +149,20 @@ has msglist => (
     lazy_build => 1,
 );
 
-####################  USER CONFIGURATION END  ####################
-
 sub BUILD {
     my $self = shift;
 
     # Get command line options
     $self->parse_args;
 }
+
+=head1 METHODS
+
+=head2 run()
+
+Main driver method.
+
+=cut
 
 sub run {
     my $self = shift;
@@ -163,8 +185,6 @@ sub run {
     # If we stopped qmail, then restart it
     $self->start_qmail;
 }
-
-# ##### SERVICE FUNCTIONS #####
 
 sub _build_msglist {
     my $self = shift;
@@ -258,6 +278,12 @@ sub _build_msglist {
 
     return $msglist;
 }
+
+=head2 parse_args
+
+Parse the command line arguments and set any required attributes.
+
+=cut
 
 sub parse_args {
     my $self = shift;
@@ -398,7 +424,12 @@ sub parse_args {
     return;
 }
 
-# Stop qmail
+=head2 stop_qmail
+
+Optionally stop the qmail daemon.
+
+=cut
+
 sub stop_qmail {
     my $self = shift;
 
@@ -440,7 +471,13 @@ sub stop_qmail {
     return 1;
 }
 
-# Start qmail
+
+=head2 start_qmail
+
+Restart the qmail daemon if it was previously stopped.
+
+=cut
+
 sub start_qmail {
     my $self = shift;
 
@@ -460,7 +497,12 @@ sub start_qmail {
     return 1;
 }
 
-# Returns the subject of a message
+=head2 get_subject($msg_id)
+
+Given the id of a message, return the subject of that message.
+
+=cut
+
 sub get_subject {
     my $self = shift;
     my ($msg) = @_;
@@ -481,6 +523,12 @@ sub get_subject {
     return $msgsub;
 }
 
+=head2 get_sender($msg_id)
+
+Given the id of a message, return the sender of the message.
+
+=cut
+
 sub get_sender {
     my $self = shift;
     my ($msg) = @_;
@@ -497,10 +545,14 @@ sub get_sender {
     return $sender;
 }
 
-# ##### MAIN FUNCTIONS #####
+=head2 send_msgs
 
-# Tries to send all queued messages now
-# This is achieved by sending an ALRM signal to qmail-send
+Attempt to send all currently queued messages.
+
+It does this by sending SIGALRM to the qmail daemon.
+
+=cut
+
 sub send_msgs {
     my $self = shift;
 
@@ -517,6 +569,12 @@ sub send_msgs {
     }
     return;
 }
+
+=head2 show_msg_info($msg_id)
+
+Given a message id, display the information about that message.
+
+=cut
 
 sub show_msg_info {
     my $self = shift;
@@ -575,7 +633,15 @@ sub show_msg_info {
     return;
 }
 
-# Display message list
+=head2 list_msg($queue)
+
+Display information for all messages in a given queue.
+
+The $queue parameter should be 'L' to display only local messages, 'R'
+to display only remote messages or anything else to display all messages.
+
+=cut
+
 sub list_msg {
     my $self = shift;
     my ($q) = @_;
@@ -594,8 +660,12 @@ sub list_msg {
     return;
 }
 
-# View a message in the queue
-#
+=head2 view_msg($msg_id)
+
+View a message in the queue
+
+=cut
+
 sub view_msg {
     my $self = shift;
     my ($rmsg) = @_;
@@ -626,6 +696,13 @@ sub view_msg {
 
     return;
 }
+
+=head2 trash_msgs
+
+Delete all of the messages whose ids are in the C<all_to_delete>
+array.
+
+=cut
 
 sub trash_msgs {
     my $self = shift;
@@ -667,6 +744,12 @@ sub trash_msgs {
     return;
 }
 
+=head2 flag_msgs()
+
+Flag all messages whose ids are in the C<all_to_flag> array.
+
+=cut
+
 sub flag_msgs {
     my $self = shift;
 
@@ -689,7 +772,14 @@ sub flag_msgs {
     return;
 }
 
-# Delete a message in the queue
+=head2 del_msg($msg_id)
+
+Given a message id, add that message to the list of messages to delete.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
+
 sub del_msg {
     my $self = shift;
     my ($rmsg) = @_;
@@ -717,6 +807,15 @@ sub del_msg {
     return;
 }
 
+=head2 del_msg_from_sender($sender)
+
+Given a sender's email address, add all messages from that sender to the
+list of messages to delete.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
+
 sub del_msg_from_sender {
     my $self = shift;
     my ($badsender) = @_;
@@ -742,6 +841,17 @@ sub del_msg_from_sender {
 
     return;
 }
+
+=head2 del_msg_from_sender_r($sender)
+
+Given a sender's email address, add all messages from that sender to the
+list of messages to delete.
+
+This method treats $sender as a regex.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
 
 sub del_msg_from_sender_r {
     my $self = shift;
@@ -769,6 +879,15 @@ sub del_msg_from_sender_r {
 
     return;
 }
+
+=head2 del_msg_header($header_re, $is_case_sensitive)
+
+Given a regex, add all messages with headers that match the regex to the
+list of messages to delete.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
 
 sub del_msg_header_r {
     my $self = shift;
@@ -804,6 +923,15 @@ sub del_msg_header_r {
 
     return;
 }
+
+=head2 del_msg_body_r($body_re, $is_case_sensitive)
+
+Given a regex, add all messages with a body that matches the regex to the
+list of messages to delete.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
 
 sub del_msg_body_r {
     my $self = shift;
@@ -843,6 +971,15 @@ sub del_msg_body_r {
     return;
 }
 
+=head2 del_msg_subj($body_re, $is_case_sensitive)
+
+Given a subject, add all messages with that subject to the list of messages
+to delete.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
+
 sub del_msg_subj {
     my $self = shift;
     my ($subject) = @_;
@@ -870,7 +1007,14 @@ sub del_msg_subj {
     return;
 }
 
-# Delete all messages in the queue (thanks Kasper Holtze)
+=head2 del_all()
+
+Delete all messages in the queue.
+
+The actual deletion is carried out by C<trash_msgs>.
+
+=cut
+
 sub del_all {
     my $self = shift;
 
@@ -889,6 +1033,12 @@ sub del_all {
 
     return;
 }
+
+=head2 flag_remote($recipient_re)
+
+Flag all remote messages whose recipient matches the given regex.
+
+=cut
 
 sub flag_remote {
     my $self = shift;
@@ -927,7 +1077,12 @@ sub flag_remote {
     return;
 }
 
-# Make statistics
+=head2 stats
+
+Display statistics about the queue.
+
+=cut
+
 sub stats {
     my $self = shift;
 
@@ -958,7 +1113,12 @@ END_OF_STATS
     return;
 }
 
-# Retrieve pid of qmail-send
+=head2 qmail_pid
+
+Get the pid of the qmail daemon
+
+=cut
+
 sub qmail_pid {
     my $self   = shift;
     my $pidcmd = $self->commands->{pid};
@@ -969,7 +1129,12 @@ sub qmail_pid {
     return $qmpid;
 }
 
-# Print help
+=head2 usage
+
+Display usage information.
+
+=cut
+
 sub usage {
     print <<"END_OF_HELP";
 $me v$VERSION
@@ -1006,7 +1171,12 @@ You can view/delete multiple message i.e. -d123 -m456 -d567
 END_OF_HELP
 }
 
-# Print help
+=head2 version
+
+Display the version.
+
+=cut
+
 sub version {
     print "$me v$VERSION\n";
     return;
