@@ -16,14 +16,6 @@ Module to manage QMail message queues
 
 package QMail::QueueHandler;
 
-# QMail::QueueHander
-#
-# Copyright (c) 2016 Dave Cross <dave@perlhacks.com>
-# Based on original version by Michele Beltrame <mb@italpro.net>
-#
-# This program is distributed under the GNU GPL.
-# For more information have a look at http://www.gnu.org
-
 use Moose;
 
 use Term::ANSIColor;
@@ -279,7 +271,7 @@ sub _build_msglist {
     return $msglist;
 }
 
-=head2 parse_args
+=head2 parse_args()
 
 Parse the command line arguments and set any required attributes.
 
@@ -424,7 +416,7 @@ sub parse_args {
     return;
 }
 
-=head2 stop_qmail
+=head2 stop_qmail()
 
 Optionally stop the qmail daemon.
 
@@ -472,7 +464,7 @@ sub stop_qmail {
 }
 
 
-=head2 start_qmail
+=head2 start_qmail()
 
 Restart the qmail daemon if it was previously stopped.
 
@@ -505,12 +497,12 @@ Given the id of a message, return the subject of that message.
 
 sub get_subject {
     my $self = shift;
-    my ($msg) = @_;
+    my ($msg_id) = @_;
 
     my $msgsub;
     my $queue = $self->queue;
-    open( my $msg_fh, '<', "${queue}mess/$msg" )
-      or die("cannot open message $msg! Is qmail-send running?\n");
+    open( my $msg_fh, '<', "${queue}mess/$msg_id" )
+      or die("cannot open message $msg_id! Is qmail-send running?\n");
     while (<$msg_fh>) {
         chomp;
         last if !/\S/; # End of headers
@@ -531,12 +523,12 @@ Given the id of a message, return the sender of the message.
 
 sub get_sender {
     my $self = shift;
-    my ($msg) = @_;
+    my ($msg_id) = @_;
 
     my $queue = $self->queue;
 
-    open( my $msg_fh, '<', "${queue}/info/$msg" )
-      or die( "cannot open info file ${queue}/info/$msg! ",
+    open( my $msg_fh, '<', "${queue}/info/$msg_id" )
+      or die( "cannot open info file ${queue}/info/$msg_id! ",
         "Is qmail-send running?\n" );
     my $sender = <$msg_fh>;
     substr( $sender, 0, 1 ) = '';
@@ -545,7 +537,7 @@ sub get_sender {
     return $sender;
 }
 
-=head2 send_msgs
+=head2 send_msgs()
 
 Attempt to send all currently queued messages.
 
@@ -668,10 +660,10 @@ View a message in the queue
 
 sub view_msg {
     my $self = shift;
-    my ($rmsg) = @_;
+    my ($msg_id) = @_;
 
-    if ( $rmsg =~ /\D/ ) {
-        warn "$rmsg is not a valid message number!\n";
+    if ( $msg_id =~ /\D/ ) {
+        warn "$msg_id is not a valid message number!\n";
         return;
     }
 
@@ -679,9 +671,9 @@ sub view_msg {
     my $ok    = 0;
     my $queue = $self->queue;
     for my $msg ( keys %{ $self->msglist } ) {
-        if ( $msg =~ /\/$rmsg$/ ) {
+        if ( $msg =~ /\/$msg_id$/ ) {
             $ok = 1;
-            print "\n --------------\nMESSAGE NUMBER $rmsg \n --------------\n";
+            print "\n --------------\nMESSAGE NUMBER $msg_id \n --------------\n";
             open( my $msg_fh, '<', "${queue}mess/$msg" );
             print while <$msg_fh>;
             close($msg_fh);
@@ -691,13 +683,13 @@ sub view_msg {
 
     # If the message isn't found, print a notice
     if ( !$ok ) {
-        warn "Message $rmsg not found in the queue!\n";
+        warn "Message $msg_id not found in the queue!\n";
     }
 
     return;
 }
 
-=head2 trash_msgs
+=head2 trash_msgs()
 
 Delete all of the messages whose ids are in the C<all_to_delete>
 array.
@@ -782,17 +774,17 @@ The actual deletion is carried out by C<trash_msgs>.
 
 sub del_msg {
     my $self = shift;
-    my ($rmsg) = @_;
+    my ($msg_id) = @_;
 
-    if ( $rmsg =~ /\D/ ) {
-        warn "$rmsg is not a valid message number!\n";
+    if ( $msg_id =~ /\D/ ) {
+        warn "$msg_id is not a valid message number!\n";
         return;
     }
 
     # Search message
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
-        if ( $msg =~ /\/$rmsg$/ ) {
+        if ( $msg =~ /\/$msg_id$/ ) {
             $ok = 1;
             $self->add_to_delete($msg);
             last;
@@ -801,7 +793,7 @@ sub del_msg {
 
     # If the message isn't found, print a notice
     if ( !$ok ) {
-        warn "Message $rmsg not found in the queue!\n";
+        warn "Message $msg_id not found in the queue!\n";
     }
 
     return;
@@ -818,15 +810,15 @@ The actual deletion is carried out by C<trash_msgs>.
 
 sub del_msg_from_sender {
     my $self = shift;
-    my ($badsender) = @_;
+    my ($sender) = @_;
 
-    warn "Looking for messages from $badsender\n";
+    warn "Looking for messages from $sender\n";
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
         if ( $self->msglist->{$msg}{sender} ) {
-            my $sender = $self->get_sender($msg);
-            if ( $sender eq $badsender ) {
+            my $msg_sender = $self->get_sender($msg);
+            if ( $msg_sender eq $sender ) {
                 $ok = 1;
                 my ( $dirno, $msgno ) = split( /\//, $msg );
                 $self->add_to_delete($msg);
@@ -836,7 +828,7 @@ sub del_msg_from_sender {
 
     # If no messages are found, print a notice
     if ( !$ok ) {
-        warn "No messages from $badsender found in the queue!\n";
+        warn "No messages from $sender found in the queue!\n";
     }
 
     return;
@@ -855,15 +847,15 @@ The actual deletion is carried out by C<trash_msgs>.
 
 sub del_msg_from_sender_r {
     my $self = shift;
-    my ($badsender) = @_;
+    my ($sender_re) = @_;
 
-    warn "Looking for messages from senders matching $badsender\n";
+    warn "Looking for messages from senders matching $sender_re\n";
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
         if ( $self->msglist->{$msg}{sender} ) {
-            my $sender = $self->get_sender($msg);
-            if ( $sender =~ /$badsender/ ) {
+            my $msg_sender = $self->get_sender($msg);
+            if ( $msg_sender =~ /$sender_re/ ) {
                 $ok = 1;
                 my ( $dirno, $msgno ) = split( /\//, $msg );
                 $self->add_to_delete($msg);
@@ -874,7 +866,7 @@ sub del_msg_from_sender_r {
     # If no messages are found, print a notice
     if ( !$ok ) {
         warn "No messages from senders matching ",
-          "$badsender found in the queue!\n";
+          "$sender_re found in the queue!\n";
     }
 
     return;
@@ -891,11 +883,11 @@ The actual deletion is carried out by C<trash_msgs>.
 
 sub del_msg_header_r {
     my $self = shift;
-    my ( $re, $is_case_sensitive ) = @_;
+    my ( $header_re, $is_case_sensitive ) = @_;
 
-    warn "Looking for messages with headers matching $re\n";
+    warn "Looking for messages with headers matching $header_re\n";
 
-    $re = "(?i)$re" if $is_case_sensitive;
+    $header_re = "(?i)$header_re" if $is_case_sensitive;
 
     my $queue = $self->queue;
     my $ok    = 0;
@@ -905,7 +897,7 @@ sub del_msg_header_r {
         while (<$msg_fh>) {
             chomp;
             last if ! /\S/; # End of headers
-            if (/$re/) {
+            if (/$header_re/) {
                 $ok = 1;
                 my ( $dirno, $msgno ) = split( /\//, $msg );
                 $self->add_to_delete($msg);
@@ -918,7 +910,8 @@ sub del_msg_header_r {
 
     # If no messages are found, print a notice
     if ( !$ok ) {
-        warn "No messages with headers matching $re found in the queue!\n";
+        warn "No messages with headers matching $header_re ",
+            "found in the queue!\n";
     }
 
     return;
@@ -935,13 +928,13 @@ The actual deletion is carried out by C<trash_msgs>.
 
 sub del_msg_body_r {
     my $self = shift;
-    my ( $re, $is_case_sensitive ) = @_;
+    my ( $body_re, $is_case_sensitive ) = @_;
 
-    my $queue         = $self->queue;
+    my $queue = $self->queue;
 
-    warn "Looking for messages with body matching $re\n";
+    warn "Looking for messages with body matching $body_re\n";
 
-    $re = "(?i)$re" if $is_case_sensitive;
+    $body_re = "(?i)$body_re" if $is_case_sensitive;
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
@@ -953,7 +946,7 @@ sub del_msg_body_r {
             last if !/\S/;
         }
         while (<$msg_fh>) {
-            if (/$re/) {
+            if (/$body_re/) {
                 $ok = 1;
                 my ( $dirno, $msgno ) = split( /\//, $msg );
                 $self->add_to_delete($msg);
@@ -965,13 +958,13 @@ sub del_msg_body_r {
 
     # If no messages are found, print a notice
     if ( !$ok ) {
-        warn "No messages with body matching $re found in the queue!\n";
+        warn "No messages with body matching $body_re found in the queue!\n";
     }
 
     return;
 }
 
-=head2 del_msg_subj($body_re, $is_case_sensitive)
+=head2 del_msg_subj($subject, $is_case_sensitive)
 
 Given a subject, add all messages with that subject to the list of messages
 to delete.
@@ -1042,11 +1035,11 @@ Flag all remote messages whose recipient matches the given regex.
 
 sub flag_remote {
     my $self = shift;
-    my ($re) = @_;
+    my ($recipient_re) = @_;
 
     my $queue = $self->queue;
 
-    warn "Looking for messages with recipients in $re\n";
+    warn "Looking for messages with recipients in $recipient_re\n";
 
     my $ok = 0;
     for my $msg ( keys %{ $self->msglist } ) {
@@ -1057,7 +1050,7 @@ sub flag_remote {
             my $recipients = <$msg_fh>;
             chomp($recipients);
             close($msg_fh);
-            if ( $recipients =~ /$re/ ) {
+            if ( $recipients =~ /$recipient_re/ ) {
                 $ok = 1;
                 $self->add_to_flag($msg);
                 warn "Message $msg being tagged for earlier retry ",
@@ -1068,7 +1061,8 @@ sub flag_remote {
 
     # If no messages are found, print a notice
     if ( !$ok ) {
-        warn "No messages with recipients in $re found in the queue!\n";
+        warn "No messages with recipients in $recipient_re ",
+            "found in the queue!\n";
         return;
     }
 
@@ -1077,7 +1071,7 @@ sub flag_remote {
     return;
 }
 
-=head2 stats
+=head2 stats()
 
 Display statistics about the queue.
 
@@ -1113,7 +1107,7 @@ END_OF_STATS
     return;
 }
 
-=head2 qmail_pid
+=head2 qmail_pid()
 
 Get the pid of the qmail daemon
 
@@ -1129,7 +1123,7 @@ sub qmail_pid {
     return $qmpid;
 }
 
-=head2 usage
+=head2 usage()
 
 Display usage information.
 
@@ -1171,7 +1165,7 @@ You can view/delete multiple message i.e. -d123 -m456 -d567
 END_OF_HELP
 }
 
-=head2 version
+=head2 version()
 
 Display the version.
 
@@ -1181,5 +1175,18 @@ sub version {
     print "$me v$VERSION\n";
     return;
 }
+
+=head2 AUTHOR
+
+Copyright (c) 2016 Dave Cross <dave@perlhacks.com>
+
+Based on original version by Michele Beltrame <mb@italpro.net>
+
+=head2 LICENCE
+
+This program is distributed under the GNU GPL.
+For more information have a look at http://www.gnu.org
+
+=cut
 
 1;
