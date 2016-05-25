@@ -46,9 +46,9 @@ has commands => (
     isa     => 'HashRef',
     default => sub {
         {
-            start => 'service qmail start',
-            stop  => 'service qmail stop',
-            pid   => 'pidof qmail-send',
+            start => '/sbin/service qmail start',
+            stop  => '/sbin/service qmail stop',
+            pid   => '/sbin/pidof qmail-send',
         };
     },
 );
@@ -1117,6 +1117,7 @@ sub qmail_pid {
     my $self   = shift;
     my $pidcmd = $self->commands->{pid};
     my $qmpid  = `$pidcmd`;
+    return 0 unless $qmpid;
     chomp($qmpid);
     $qmpid =~ s/\s+//g;
     return 0 if $qmpid =~ /\D/;
