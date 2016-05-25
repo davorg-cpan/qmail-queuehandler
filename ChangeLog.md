@@ -14,3 +14,9 @@
 * ChangeLog.md
 * MANIFEST
 
+## 2.0.2 - 2016-05-25
+
+* lib/QMail/QueueHanlder.pm
+    * Use full path for external commands
+    * Be more careful with the QMail pid
+
