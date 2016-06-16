@@ -14,4 +14,6 @@ isa_ok($qh, 'QMail::QueueHandler');
 
 ok($output, 'Got some help text');
 
+can_ok($qh, 'run');
+
 done_testing();
