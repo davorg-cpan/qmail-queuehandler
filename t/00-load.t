@@ -1,6 +1,8 @@
+use strict;
+use warnings;
 use Test::More;
 
-BEGIN { use_ok 'QMail::QueueHandler' };
+BEGIN { use_ok 'QMail::QueueHandler'; }
 
 # Running new() randomly like this will splurge the help text to
 # STDOUT. Let's stop that from appearing in the test output.

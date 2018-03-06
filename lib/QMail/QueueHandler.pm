@@ -641,8 +641,8 @@ sub list_msg {
     my $msglist = $self->msglist;
     if ( !$self->summary ) {
         for my $msg ( keys %$msglist ) {
-            next if $q eq 'L' and ! $msglist->{$msg}{local};
-            next if $q eq 'R' and ! $msglist->{$msg}{remote};
+            next if $q eq 'L' and not $msglist->{$msg}{local};
+            next if $q eq 'R' and not $msglist->{$msg}{remote};
 
             $self->show_msg_info($msg);
         }
@@ -1165,6 +1165,9 @@ You can view/delete multiple message i.e. -d123 -m456 -d567
 
 END_OF_HELP
 }
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
 
 =head2 version()
 
