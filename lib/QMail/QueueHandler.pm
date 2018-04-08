@@ -284,132 +284,180 @@ sub parse_args {
 
     my %opt;
 
-    my %optargs = (
-        a => 0, # (Attempt to) send all queued messages
-        l => 0, # List message queues
-        L => 0, # List local message queue
-        R => 0, # List remote message queue
-        N => 0, # List message numbers only
-        c => 0, # Coloured output
-        s => 0, # Show statistics of queues
-        m => 1, # Display message with given number
-        f => 1, # Delete messages from given sender
-        F => 1, # Delete messages from given sender (regex match)
-        d => 1, # Delete message with given number
-        S => 1, # Delete messages with matching subject
-        h => 1, # Delete messages with matching header (case insensitive)
-        b => 1, # Delete messages with matching body (case insensitive)
-        H => 1, # Delete messages with matching header (case sensitive)
-        B => 1, # Delete messages with matching body (case sensitive)
-        t => 1, # Flag messages with matching recipients
-        D => 0, # Delete all messages in queues
-        V => 0, # Display program version
-        '?' => 0, # Display help
-    );
-
-    my $optstring = join '', map { $_ . ( $optargs{$_} ? ':' : '' ) }
-      keys %optargs;
-
-    getopts( $optstring, \%opt );
-
-    foreach my $opt ( keys %opt ) {
-        if ( $optargs{$opt} and not $opt{$opt} ) {
-            die "Option $opt must have an argument\n";
-        }
-      SWITCH: {
-            $opt eq 'a' and do {
+    my %option = (
+        # (Attempt to) send all queued messages
+        a => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&send_msgs ] );
-                last SWITCH;
-            };
-            $opt eq 'l' and do {
+            },
+        },
+        # List message queues
+        l => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&list_msg, 'A' ] );
-                last SWITCH;
-            };
-            $opt eq 'L' and do {
+            },
+        },
+        # List local message queue
+        L => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&list_msg, 'L' ] );
-                last SWITCH;
-            };
-            $opt eq 'R' and do {
+            },
+        },
+        # List remote message queue
+        R => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&list_msg, 'R' ] );
-                last SWITCH;
-            };
-            $opt eq 'N' and do {
+            },
+        },
+        # List message numbers only
+        N => {
+            arg  => 0,
+            code => sub {
                 $self->summary(1);
-                last SWITCH;
-            };
-            $opt eq 'c' and do {
+            },
+        },
+        # Coloured output
+        c => {
+            arg  => 0,
+            code => sub {
                 @{ $self->colours }{qw[msg stat end]} = (
                     color('bold bright_blue'),
                     color('bold bright_red'),
                     color('reset'),
                 );
-                last SWITCH;
-            };
-            $opt eq 's' and do {
+            },
+        },
+        # Show statistics of queues
+        s => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&stats ] );
-                last SWITCH;
-            };
-            $opt eq 'm' and do {
-                $self->add_action( [ \&view_msg, $opt{$opt} ] );
-                last SWITCH;
-            };
-            $opt eq 'f' and do {
-                $self->add_action( [ \&del_msg_from_sender, $opt{$opt} ] );
+            },
+        },
+        # Display message with given number
+        m => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&view_msg, @_ ] );
+            },
+        },
+        # Delete messages from given sender
+        f => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_from_sender, @_ ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'F' and do {
-                $self->add_action( [ \&del_msg_from_sender_r, $opt{$opt} ] );
+            },
+        },
+        # Delete messages from given sender (regex match)
+        F => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_from_sender_r, @_ ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'd' and do {
-                $self->add_action( [ \&del_msg, $opt{$opt} ] );
+            },
+        },
+        # Delete message with given number
+        d => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg, @_ ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'S' and do {
-                $self->add_action( [ \&del_msg_subj, $opt{$opt} ] );
+            },
+        },
+        # Delete messages with matching subject
+        S => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_subj, @_ ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'h' and do {
-                $self->add_action( [ \&del_msg_header_r, $opt{$opt}, 1 ] );
+            },
+        },
+        # Delete messages with matching header (case insensitive)
+        h => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_header_r, @_, 1 ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'b' and do {
-                $self->add_action( [ \&del_msg_body_r, $opt{$opt}, 1 ] );
+            },
+        },
+        # Delete messages with matching body (case insensitive)
+        b => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_body_r, @_, 1 ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'H' and do {
-                $self->add_action( [ \&del_msg_header_r, $opt{$opt}, 0 ] );
+            },
+        },
+        # Delete messages with matching header (case sensitive)
+        H => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_header_r, @_, 0 ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'B' and do {
-                $self->add_action( [ \&del_msg_body_r, $opt{$opt}, 0 ] );
+            },
+        },
+        # Delete messages with matching body (case sensitive)
+        B => {
+            arg  => 1,
+            code => sub {
+                $self->add_action( [ \&del_msg_body_r, @_, 0 ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 't' and do {
-                $self->add_actions( [ \&flag_remote, $opt{$opt} ] );
-                last SWITCH;
-            };
-            $opt eq 'D' and do {
+            },
+        },
+        # Flag messages with matching recipients
+        t => {
+            arg  => 1,
+            code => sub {
+                $self->add_actions( [ \&flag_remote, @_ ] );
+            },
+        },
+        # Delete all messages in queues
+        D => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&del_all ] );
                 $self->deletions(1);
-                last SWITCH;
-            };
-            $opt eq 'V' and do {
+            },
+        },
+        # Display program version
+        V => {
+            arg  => 0,
+            code => sub {
                 $self->add_action( [ \&version ] );
-                last SWITCH;
-            };
-            $opt eq '?' and do {
+            },
+        },
+        # Display help
+        '?' => {
+            arg  => 0,
+            code => sub {
                 $self->usage;
-                last SWITCH;
-            };
+            },
+        },
+    );
+
+    my $optstring = join '', map { $_ . ( $option{$_}{arg} ? ':' : '' ) }
+      keys %option;
+
+    getopts( $optstring, \%opt );
+
+    foreach my $opt ( keys %opt ) {
+        if (! exists $option{$opt}) {
+            warn "$opt is not a valid option\n";
+            next;
+        }
+        if ( $option{$opt}{arg} and not $opt{$opt} ) {
+            die "Option $opt must have an argument\n";
+        }
+
+        if ($option{$opt}{arg}) {
+            $option{$opt}{code}->($opt{$opt});
+        } else {
+            $option{$opt}{code}->();
         }
     }
 
