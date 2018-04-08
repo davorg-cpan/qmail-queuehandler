@@ -1195,11 +1195,17 @@ Available parameters:
   -fsender : delete message from sender
   -F're'   : delete message from senders matching regular expression re
   -Stext   : delete all messages that have/contain text as Subject
-  -h're'   : delete all messages with headers matching regular expression re (case insensitive)
-  -b're'   : delete all messages with body matching regular expression re (case insensitive)
-  -H're'   : delete all messages with headers matching regular expression re (case sensitive)
-  -B're'   : delete all messages with body matching regular expression re (case sensitive)
-  -t're'   : flag messages with recipients in regular expression 're' for earlier retry (note: this lengthens the time message can stay in queue)
+  -h're'   : delete all messages with headers matching regular expression
+             re (case insensitive)
+  -b're'   : delete all messages with body matching regular expression
+             re (case insensitive)
+  -H're'   : delete all messages with headers matching regular expression
+             re (case sensitive)
+  -B're'   : delete all messages with body matching regular expression
+             re (case sensitive)
+  -t're'   : flag messages with recipients in regular expression 're' for
+             earlier retry (note: this lengthens the time message can
+             stay in queue)
   -D       : delete all messages in the queue (local and remote)
   -V       : print program version
   -?       : Display this help
