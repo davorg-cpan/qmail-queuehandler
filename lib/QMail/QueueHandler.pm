@@ -178,18 +178,17 @@ sub run {
     $self->start_qmail;
 }
 
-sub _build_msglist {
+sub _get_todo {
     my $self = shift;
+    my ($todohash, $msglist) = @_;
 
     my $queue = $self->queue;
 
-    my ( %todohash, %bouncehash );
-    my $msglist = {};
-
     opendir( my $tododir, "${queue}todo" );
+
     if ( $self->bigtodo ) {
         foreach my $todofile ( grep { !/\./ } readdir $tododir ) {
-            $todohash{$todofile} = $todofile;
+            $todohash->{$todofile} = $todofile;
         }
     }
     else {
@@ -204,67 +203,111 @@ sub _build_msglist {
         }
     }
     closedir $tododir;
+}
+
+sub _get_info {
+    my $self = shift;
+    my ($dir, $msglist) = @_;
+
+    my $queue = $self->queue;
+
+    opendir( my $infosubdir, "${queue}info/$dir" );
+
+    foreach my $infofile (
+        grep { !/\./ }
+        map  { "$dir/$_" } readdir $infosubdir
+      ) {
+        $msglist->{$infofile}{sender} = 'S';
+    }
+
+    close $infosubdir;
+}
+
+sub _get_local {
+    my $self = shift;
+    my ($dir, $msglist) = @_;
+
+    my $queue = $self->queue;
+
+    opendir( my $localsubdir, "${queue}local/$dir" );
+
+    foreach my $localfile (
+        grep { !/\./ }
+        map  { "$dir/$_" } readdir $localsubdir
+      ) {
+        $msglist->{$localfile}{local} = 'L';
+    }
+
+    close $localsubdir;
+}
+
+sub _get_remote {
+    my $self = shift;
+    my ($dir, $msglist) = @_;
+
+    my $queue = $self->queue;
+
+    opendir( my $remotesubdir, "${queue}remote/$dir" );
+
+    foreach my $remotefile (
+        grep { !/\./ }
+        map  { "$dir/$_" } readdir $remotesubdir
+    ) {
+        $msglist->{$remotefile}{remote} = 'R';
+    }
+
+  close $remotesubdir;
+}
+
+sub _get_subdir {
+    my $self = shift;
+    my ($dir, $msglist, $todohash, $bouncehash) = @_;
+
+    my $queue = $self->queue;
+
+    opendir( my $subdir, "${queue}mess/$dir" );
+
+    foreach my $file (
+        grep { !/\./ }
+        map  { "$dir/$_" } readdir $subdir
+      ) {
+        my ( $dirno, $msgno ) = split( /\//, $file );
+        if ( $bouncehash->{$msgno} ) {
+            $msglist->{$file}{bounce} = 'B';
+        }
+        if ( $self->bigtodo ) {
+            if ( $todohash->{$msgno} ) {
+                $msglist->{$file}{todo} = $msgno;
+            }
+        }
+    }
+
+    closedir $subdir;
+}
+
+sub _build_msglist {
+    my $self = shift;
+
+    my $queue = $self->queue;
+
+    my ( $todohash, $bouncehash );
+    my $msglist = {};
+
+    $self->_get_todo($todohash, $msglist);
 
     opendir( my $bouncedir, "${queue}bounce" );
     foreach my $bouncefile ( grep { !/\./ } readdir $bouncedir ) {
-        $bouncehash{$bouncefile} = 'B';
+        $bouncehash->{$bouncefile} = 'B';
     }
     closedir $bouncedir;
 
     opendir( my $messdir, "${queue}mess" );
+
     foreach my $dir ( grep { !/\./ } readdir $messdir ) {
-
-        opendir( my $infosubdir, "${queue}info/$dir" );
-
-        foreach my $infofile (
-            grep { !/\./ }
-            map  { "$dir/$_" } readdir $infosubdir
-          ) {
-            $msglist->{$infofile}{sender} = 'S';
-        }
-
-        close $infosubdir;
-
-        opendir( my $localsubdir, "${queue}local/$dir" );
-
-        foreach my $localfile (
-            grep { !/\./ }
-            map  { "$dir/$_" } readdir $localsubdir
-          ) {
-            $msglist->{$localfile}{local} = 'L';
-        }
-
-        close $localsubdir;
-
-        opendir( my $remotesubdir, "${queue}remote/$dir" );
-
-        foreach my $remotefile (
-            grep { !/\./ }
-            map  { "$dir/$_" } readdir $remotesubdir
-          ) {
-            $msglist->{$remotefile}{remote} = 'R';
-        }
-
-        close $remotesubdir;
-
-        opendir( my $subdir, "${queue}mess/$dir" );
-
-        foreach my $file (
-            grep { !/\./ }
-            map  { "$dir/$_" } readdir $subdir
-          ) {
-            my ( $dirno, $msgno ) = split( /\//, $file );
-            if ( $bouncehash{$msgno} ) {
-                $msglist->{$file}{bounce} = 'B';
-            }
-            if ( $self->bigtodo ) {
-                if ( $todohash{$msgno} ) {
-                    $msglist->{$file}{todo} = $msgno;
-                }
-            }
-        }
-
-        closedir $subdir;
+        $self->_get_info($dir);
+        $self->_get_local($dir);
+        $self->_get_remote($dir);
+        $self->_get_subdir($dir);
     }
     closedir $messdir;
 
