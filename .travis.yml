@@ -12,5 +12,7 @@ perl:
 
 before_install:
   cpanm -n Devel::Cover::Report::Coveralls
+  apt-get install qmail
+  
 script:
   perl Makefile.PL && make && cover -test -report coveralls

@@ -22,4 +22,7 @@ for my $c (qw(run commands restart to_delete to_flag msglist colours)) {
   can_ok($qh, $c);
 }
 
+my $stopped;
+eval { $stopped = $qh->stop_qmail; };
+ok( !$stopped , 'Stops qmail');
 done_testing();
