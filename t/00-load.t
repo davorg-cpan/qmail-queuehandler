@@ -1,6 +1,8 @@
-use strict;
+use strict; # -*- mode: cperl -*-
 use warnings;
 use Test::More;
+
+use lib qw(lib ../lib);
 
 BEGIN { use_ok 'QMail::QueueHandler'; }
 
@@ -16,6 +18,8 @@ isa_ok($qh, 'QMail::QueueHandler');
 
 ok($output, 'Got some help text');
 
-can_ok($qh, 'run');
+for my $c (qw(run commands restart to_delete to_flag msglist colours)) {
+  can_ok($qh, $c);
+}
 
 done_testing();
