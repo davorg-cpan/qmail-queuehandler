@@ -729,11 +729,16 @@ sub list_msg {
     my $self = shift;
     my ($q) = @_;
 
+    $q = uc $q;
+
+    my $local =  $q ne 'R';
+    my $remote = $q ne 'L';
+
     my $msglist = $self->msglist;
     if ( !$self->summary ) {
         for my $msg ( keys %$msglist ) {
-            next if $q eq 'L' and not $msglist->{$msg}{local};
-            next if $q eq 'R' and not $msglist->{$msg}{remote};
+            next if $local  and not $msglist->{$msg}{local};
+            next if $remote and not $msglist->{$msg}{remote};
 
             $self->show_msg_info($msg);
         }
