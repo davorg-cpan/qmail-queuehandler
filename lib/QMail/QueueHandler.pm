@@ -1286,7 +1286,7 @@ sub version {
 
 Copyright (c) 2016 Dave Cross E<lt>dave@perlhacks.comE<gt>
 
-Based on original version by Michele Beltrame E<lt>mb@italpro.netE</gt>
+Based on original version by Michele Beltrame E<lt>mb@italpro.netE<gt>
 
 =head2 LICENCE
 
